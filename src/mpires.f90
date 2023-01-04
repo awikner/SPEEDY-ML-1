@@ -98,7 +98,7 @@ module mpires
 
         logical :: make_file
 
-        file_path = '/scratch/user/troyarcomano/Predictions/Hybrid/'
+        file_path = '/scratch/user/awikner/Predictions/Hybrid/'
         speedy_file = file_path//'hybrid_speedy_out.nc'
         hybrid_out_root='hybrid_prediction_era'
         truth_out_root = 'era_truth'
@@ -483,7 +483,7 @@ module mpires
            write(day,'(I2.2)') calendar%currentday
            write(hour,'(I2.2)') calendar%currenthour
 
-           file_path = '/scratch/user/troyarcomano/Predictions/Hybrid/'
+           file_path = '/scratch/user/awikner/Predictions/Hybrid/'
            date_file = month//'_'//day//'_'//year//'_'//hour
            hybrid_out_file_name = file_path//hybrid_out_root//res%model_parameters%trial_name//trial_word//date_file//file_end
 
@@ -1057,7 +1057,7 @@ module mpires
            truth_out_root = 'era_truth'
            file_end = '.nc'
            trial_word = 'trial_'
-           file_path = '/scratch/user/troyarcomano/Predictions/Hybrid/'
+           file_path = '/scratch/user/awikner/Predictions/Hybrid/'
 
            call get_current_time_delta_hour(calendar,res%model_parameters%traininglength+res%model_parameters%synclength+res%model_parameters%prediction_markers(res%model_parameters%current_trial_number))
            write(year,'(I4.4)') calendar%currentyear
@@ -1101,7 +1101,7 @@ module mpires
 
        logical :: make_file
 
-       file_path = '/scratch/user/troyarcomano/Predictions/Hybrid/'
+       file_path = '/scratch/user/awikner/Predictions/Hybrid/'
        speedy_file = file_path//'hybrid_speedy_out.nc'
 
        call get_current_time_delta_hour(calendar,model_parameters%traininglength+model_parameters%prediction_markers(model_parameters%current_trial_number)+model_parameters%synclength+timestep*model_parameters%timestep)

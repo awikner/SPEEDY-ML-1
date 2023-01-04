@@ -758,7 +758,7 @@ subroutine get_full_tisr(reservoir,model_parameters,grid)
    character(len=:), allocatable :: file_path
    character(len=:), allocatable :: tisr_file
  
-   file_path = '/scratch/user/troyarcomano/ERA_5/2012/'
+   file_path = '/scratch/user/awikner/ERA_5/2012/'
    tisr_file = file_path//'toa_incident_solar_radiation_2012_regridded_classic4.nc'
 
    call read_3d_file_parallel(tisr_file,'tisr',mpi_res,grid,reservoir%full_tisr,1,1)
@@ -1453,7 +1453,7 @@ subroutine write_trained_res_old(reservoir,model_parameters,grid)
   character(len=4) :: worker_char
   character(len=1) :: height_char
 
-  file_path = '/scratch/user/troyarcomano/ML_SPEEDY_WEIGHTS/'
+  file_path = '/scratch/user/awikner/ML_SPEEDY_WEIGHTS/'
 
   write(worker_char,'(i0.4)') reservoir%assigned_region
   write(height_char,'(i0.1)') grid%level_index
@@ -1486,7 +1486,7 @@ subroutine write_trained_res(reservoir,model_parameters,grid)
   character(len=:), allocatable :: file_path
   character(len=4) :: worker_char
 
-  file_path = '/scratch/user/troyarcomano/ML_SPEEDY_WEIGHTS/'
+  file_path = '/scratch/user/awikner/ML_SPEEDY_WEIGHTS/'
 
   write(worker_char,'(i0.4)') reservoir%assigned_region
 
@@ -1509,7 +1509,7 @@ subroutine write_controller_file(model_parameters)
 
    character(len=:), allocatable :: file_path
 
-   file_path = '/scratch/user/troyarcomano/ML_SPEEDY_WEIGHTS/'//trim(model_parameters%trial_name)//'_controller_file.txt'
+   file_path = '/scratch/user/awikner/ML_SPEEDY_WEIGHTS/'//trim(model_parameters%trial_name)//'_controller_file.txt'
  
    open (10, file=file_path, status='unknown')
 
@@ -1620,7 +1620,7 @@ subroutine read_ohtc_parallel_training(reservoir,model_parameters,grid,ohtc_var)
 
    character :: ohtc_file 
 
-   ohtc_file = '/scratch/user/troyarcomano/ORAS5/regridded_sohtc300_control_monthly_highres_2D_CONS_v0.1_hourly.nc'
+   ohtc_file = '/scratch/user/awikner/ORAS5/regridded_sohtc300_control_monthly_highres_2D_CONS_v0.1_hourly.nc'
 
    !Starting date of the ohtc data
    call initialize_calendar(ohtc_calendar,1979,1,16,0)
@@ -1655,7 +1655,7 @@ subroutine read_ohtc_parallel_prediction(reservoir,model_parameters,grid,ohtc_va
 
    character :: ohtc_file
 
-   ohtc_file = '/scratch/user/troyarcomano/ORAS5/regridded_sohtc300_control_monthly_highres_2D_CONS_v0.1_hourly.nc'
+   ohtc_file = '/scratch/user/awikner/ORAS5/regridded_sohtc300_control_monthly_highres_2D_CONS_v0.1_hourly.nc'
 
    !Starting date of the ohtc data
    call initialize_calendar(ohtc_calendar,1979,1,16,0)

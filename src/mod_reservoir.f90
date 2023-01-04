@@ -20,7 +20,7 @@ subroutine initialize_model_parameters(model_parameters,processor,num_of_procs)
    model_parameters%ml_only = .False.
 
    model_parameters%num_predictions = 1
-   model_parameters%trial_name = '6000_20_20_20_beta_res0.001_beta_model_1.0_prior_0.0_overlap1_vertlevel_1_precip_epsilon0.001_ocean_model7d_0.0001beta_sigma0.6_dp_noise10_out_dp' !14d_0.9rho_10noise_beta0.001_20years'  
+   model_parameters%trial_name = '6000_20_20_20_beta_res0.001_beta_model_1.0_prior_0.0_overlap1_vertlevel_1_precip_epsilon0.001_ocean_model7d_0.0001beta_sigma0.6_dp_noise10_out_precipnoabs_dp' !14d_0.9rho_10noise_beta0.001_20years'  
    !model_parameters%trial_name = '6000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_4_vertlap_6_slab_ocean_model_true_precip_true'
    !'4000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_4_vertlap_2_full_timestep_1'
    !model_parameters%trial_name = '4000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_4_vertlap_2_full_test_climate_all_tisr_longer'
@@ -810,13 +810,13 @@ subroutine initialize_prediction(reservoir,model_parameters,grid)
 
      write(year,'(I4)') calendar%currentyear
 
-     file_path = '/scratch/user/troyarcomano/ERA_5/'//year//'/'
+     file_path = '/scratch/user/awikner/ERA_5/'//year//'/'
      sst_file = file_path//'era_5_y'//year//'_sst_regridded_fixed_var_gcc.nc' !'_sst_regridded_mpi_fixed_var_gcc.nc'
 
      call read_netcdf_3d('sst',sst_file,temp3d)
 
      if(model_parameters%train_on_sst_anomalies) then
-       call read_netcdf_3d('sst','/scratch/user/troyarcomano/ERA_5/regridded_era_sst_climatology1981_1999_gcc.nc',temp3d_2)
+       call read_netcdf_3d('sst','/scratch/user/awikner/ERA_5/regridded_era_sst_climatology1981_1999_gcc.nc',temp3d_2)
      endif 
  
      if(.not. model_parameters%train_on_sst_anomalies) then
@@ -858,7 +858,7 @@ subroutine get_full_tisr(reservoir,model_parameters,grid)
    character(len=:), allocatable :: file_path
    character(len=:), allocatable :: tisr_file
  
-   file_path = '/scratch/user/troyarcomano/ERA_5/2012/'
+   file_path = '/scratch/user/awikner/ERA_5/2012/'
    tisr_file = file_path//'toa_incident_solar_radiation_2012_regridded_classic4.nc'
 
    call read_3d_file_parallel(tisr_file,'tisr',mpi_res,grid,reservoir%full_tisr,1,1)
@@ -1613,7 +1613,7 @@ subroutine write_trained_res_old(reservoir,model_parameters,grid)
   character(len=4) :: worker_char
   character(len=1) :: height_char
 
-  file_path = '/scratch/user/troyarcomano/ML_SPEEDY_WEIGHTS/'
+  file_path = '/scratch/user/awikner/ML_SPEEDY_WEIGHTS/'
 
   write(worker_char,'(i0.4)') reservoir%assigned_region
   write(height_char,'(i0.1)') grid%level_index
@@ -1647,7 +1647,7 @@ subroutine write_trained_res(reservoir,model_parameters,grid)
   character(len=4) :: worker_char
   character(len=1) :: height_char
 
-  file_path = '/scratch/user/troyarcomano/ML_SPEEDY_WEIGHTS/'
+  file_path = '/scratch/user/awikner/ML_SPEEDY_WEIGHTS/'
 
   write(worker_char,'(i0.4)') reservoir%assigned_region
   write(height_char,'(i0.1)') grid%level_index
@@ -1675,7 +1675,7 @@ subroutine write_controller_file(model_parameters)
 
    character(len=:), allocatable :: file_path
 
-   file_path = '/scratch/user/troyarcomano/ML_SPEEDY_WEIGHTS/'//trim(model_parameters%trial_name)//'_controller_file.txt'
+   file_path = '/scratch/user/awikner/ML_SPEEDY_WEIGHTS/'//trim(model_parameters%trial_name)//'_controller_file.txt'
  
    open (10, file=file_path, status='unknown')
 

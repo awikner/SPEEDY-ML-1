@@ -425,7 +425,7 @@ subroutine iogrid(imode)
 
         temp2d =  reshape(psgr,(/ix,il/))
         nc_file_end = '.nc' 
-        file_path = '/scratch/user/troyarcomano/FortranReservoir/hybridspeedy/' 
+        file_path = '/scratch/user/awikner/FortranReservoir/hybridspeedy/' 
        
         full_filename = file_path//'restart_y'//nc_filename(1:4)//'_m'//nc_filename(5:6)//nc_file_end  
         print *,full_filename  

@@ -2826,7 +2826,7 @@ module mod_io
 
       integer :: ncid
 
-      file_path = '/scratch/user/troyarcomano/ML_SPEEDY_WEIGHTS/'
+      file_path = '/scratch/user/awikner/ML_SPEEDY_WEIGHTS/'
 
       write(worker_char,'(i0.4)') reservoir%assigned_region
       print *, 'reservoir%assigned_region',reservoir%assigned_region
@@ -2873,7 +2873,7 @@ module mod_io
 
       integer :: ncid
 
-      file_path = '/scratch/user/troyarcomano/ML_SPEEDY_WEIGHTS/'
+      file_path = '/scratch/user/awikner/ML_SPEEDY_WEIGHTS/'
 
       write(worker_char,'(i0.4)') reservoir%assigned_region
       print *, 'reservoir%assigned_region',reservoir%assigned_region

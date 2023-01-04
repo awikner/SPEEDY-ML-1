@@ -190,7 +190,7 @@ module speedy_res_interface
 
     !         month = month_2
 
-    !         file_path = '/scratch/user/troyarcomano/ERA_5/'//year//'/'
+    !         file_path = '/scratch/user/awikner/ERA_5/'//year//'/'
 
     !         regrid_file_name = file_path//file_begin//month//mid_file//year//regrid_file//file_end
     !         spectral_regrid_file_name = file_path//file_begin//month//mid_file//year//spectral_regrid_file//file_end
@@ -202,7 +202,7 @@ module speedy_res_interface
 
     !         month = month_1
 
-    !         file_path = '/scratch/user/troyarcomano/ERA_5/'//year//'/'
+    !         file_path = '/scratch/user/awikner/ERA_5/'//year//'/'
 
     !         regrid_file_name = file_path//file_begin//month//mid_file//year//regrid_file//file_end
     !         spectral_regrid_file_name = file_path//file_begin//month//mid_file//year//spectral_regrid_file//file_end
@@ -332,7 +332,7 @@ module speedy_res_interface
          write(year,'(I4)') year_i
 
          if(allocated(era_data_temp%era_sst_climo)) print *, 'top loop temp climo allocated',year_i
-         file_path = '/scratch/user/troyarcomano/ERA_5/'//year//'/'
+         file_path = '/scratch/user/awikner/ERA_5/'//year//'/'
          regrid_file_name = file_path//file_begin//year//regrid_mpi//file_end
 
          !if(model_parameters%irank == 1) print *, 'regrid_file_name',regrid_file_name
@@ -387,7 +387,7 @@ module speedy_res_interface
 
          print *, 'reservoir%sst_climo_bool',reservoir%sst_climo_bool, reservoir%assigned_region
          if(reservoir%sst_climo_bool) then
-           sst_climo_file = '/scratch/user/troyarcomano/ERA_5/regridded_era_sst_climatology1981_1999_gcc.nc'
+           sst_climo_file = '/scratch/user/awikner/ERA_5/regridded_era_sst_climatology1981_1999_gcc.nc'
            if(year_i == start_year) then
               if(model_parameters%irank == 0) print *, sst_climo_file
               !call read_3d_file_parallel_res(sst_climo_file,'sst',mpi_res,grid,era_data_temp%era_sst_climo) 
@@ -500,7 +500,7 @@ module speedy_res_interface
      do year_i=start_year,end_year
          write(year,'(I4)') year_i
 
-         file_path = '/scratch/user/troyarcomano/SPEEDY_STATES/'
+         file_path = '/scratch/user/awikner/SPEEDY_STATES/'
          !restart_file_name = file_path//file_begin//year//'_fixed_var'//file_end 
          !restart_file_name = file_path//file_begin//year//'_chunked_time'//file_end
          !restart_file_name = file_path//file_begin//year//'_new'//file_end
@@ -544,7 +544,7 @@ module speedy_res_interface
 
     character(len=:), allocatable :: era_file
 
-    era_file = '/scratch/user/troyarcomano/ERA_5/1990/era_5_m11_y1990_regridded_spectral_mpi.nc'
+    era_file = '/scratch/user/awikner/ERA_5/1990/era_5_m11_y1990_regridded_spectral_mpi.nc'
 
     print *, 'here'
 
