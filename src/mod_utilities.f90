@@ -1434,7 +1434,7 @@ module mod_utilities
 
       temp = temp + gaussnoise(grid%precip_start:grid%precip_end)*noisemag!*temp
 
-      temp = abs(temp) !NOTE make sure we dont get any negative numbers
+      !temp = abs(temp) !NOTE make sure we dont get any negative numbers
 
       temp = log(1 + temp/model_parameters%precip_epsilon)
 
