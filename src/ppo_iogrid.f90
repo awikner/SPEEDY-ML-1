@@ -425,7 +425,7 @@ subroutine iogrid(imode)
 
         temp2d =  reshape(psgr,(/ix,il/))
         nc_file_end = '.nc' 
-        file_path = '/scratch/user/awikner/FortranReservoir/hybridspeedy/' 
+        file_path = '/scratch/user/awikner/SPEEDY_STATES/' 
        
         full_filename = file_path//'restart_y'//nc_filename(1:4)//'_m'//nc_filename(5:6)//nc_file_end  
         print *,full_filename  
@@ -569,7 +569,11 @@ subroutine iogrid(imode)
       elseif((minval(tgr) < 160.0).or.maxval(tgr) > 330.0) then
         print *,'Temperature is unsafe for SPEEDY, stopping hybrid prediction'
         internal_state_vector%is_safe_to_run_speedy = .False.
+<<<<<<< HEAD
       elseif((minval(qgr) < -6.0).or.maxval(qgr) > 30.0) then !26.0) then
+=======
+      elseif((minval(qgr) < -6.0).or.maxval(qgr) > 26.0) then
+>>>>>>> alexs_code
         print *,'Specific is unsafe for SPEEDY, stopping hybrid prediction'
         internal_state_vector%is_safe_to_run_speedy = .False.
       else

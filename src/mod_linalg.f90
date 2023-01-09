@@ -1,7 +1,7 @@
 module mod_linalg
 
   use MKL_SPBLAS
-  use mod_utilities, only : dp, main_type, reservoir_type
+  use mod_utilities, only : dp, main_type, reservoir_type, sparse_matrix_type
   
   implicit none
 
@@ -23,7 +23,153 @@ module mod_linalg
 
          reservoir%descrA%TYPE = SPARSE_MATRIX_TYPE_GENERAL
      end subroutine
-    
+
+     subroutine mklsparse_zero(dim1, dim2, sparse_matrix)
+         integer, intent(in) :: dim1, dim2
+         type(SPARSE_MATRIX_T)     :: coo_matrix
+         type(sparse_matrix_type), intent(inout) :: sparse_matrix
+
+
+         integer :: stat,i
+         integer, allocatable :: rows(:), cols(:)
+         real(kind=dp), allocatable :: values(:)
+
+         allocate(rows(1))
+         allocate(cols(1))
+         allocate(values(1))
+         rows(1) = 1
+         cols(1) = 1
+         values(1) = 0.0_dp
+
+
+         stat=mkl_sparse_d_create_coo(coo_matrix,SPARSE_INDEX_BASE_ONE,dim1,dim2,1,rows,cols,values)
+
+         if(stat.ne.0) then
+           print *, 'MKL sparse creation of zero matrix failed because of stat error',stat,'exiting'
+           stop
+         endif
+
+         stat = mkl_sparse_convert_csr(coo_matrix,SPARSE_OPERATION_NON_TRANSPOSE, sparse_matrix%matrix)
+
+         if(stat.ne.0) then
+           print *, 'MKL sparse creation of csr zero matrix failed because of stat error',stat,'exiting'
+           stop
+         endif
+
+         sparse_matrix%descr%TYPE = SPARSE_MATRIX_TYPE_GENERAL
+
+         deallocate(rows)
+         deallocate(cols)
+         deallocate(values)
+     end subroutine
+
+     subroutine mklsparse_diag(matrix, sparse_matrix)
+         real(kind=dp), intent(inout) :: matrix(:)
+         type(SPARSE_MATRIX_T)     :: coo_matrix
+         type(sparse_matrix_type), intent(inout) :: sparse_matrix
+
+         
+         integer :: stat,m,i
+         integer, allocatable :: rows(:), cols(:)
+
+         m = size(matrix,1)
+
+         allocate(rows(m))
+         allocate(cols(m))
+
+         do i=1,m
+           rows(i) = i
+           cols(i) = i
+         end do
+
+         stat = mkl_sparse_d_create_coo(coo_matrix, SPARSE_INDEX_BASE_ONE,m,m,m,rows,cols,matrix)
+
+         if(stat.ne.0) then
+           print *, 'MKL sparse creation failed because of stat error',stat,'exiting'
+           stop
+         endif
+         
+         stat = mkl_sparse_convert_csr(coo_matrix, SPARSE_OPERATION_NON_TRANSPOSE, sparse_matrix%matrix)
+
+         sparse_matrix%descr%TYPE = SPARSE_MATRIX_TYPE_GENERAL
+
+         deallocate(rows)
+         deallocate(cols)
+     end subroutine 
+
+     subroutine mklsparse_matrix(matrix, sparse_matrix)
+         real(kind=dp), intent(in) :: matrix(:,:)
+         real(kind=dp), allocatable :: values(:)
+         type(SPARSE_MATRIX_T)     :: coo_matrix
+         type(sparse_matrix_type), intent(inout) :: sparse_matrix
+         
+
+
+         integer :: stat,m,n,i,j,k
+         integer, allocatable :: rows(:), cols(:)
+
+         m = size(matrix,1)
+         n = size(matrix,2)
+
+         allocate(rows(m*n))
+         allocate(cols(m*n))
+         allocate(values(m*n))
+
+         k = 1
+         do i=1,m
+           do j=1,n
+             if(matrix(i,j).ne.0) then
+               rows(k)   = i
+               cols(k)   = j
+               values(k) = matrix(i,j)
+               k         = k + 1
+             endif
+           end do
+         end do
+         print *, 'Number of nonzero elements in matrix:',k-1
+
+         stat = mkl_sparse_d_create_coo(coo_matrix,SPARSE_INDEX_BASE_ONE,m,n,k-1,rows(1:k-1),cols(1:k-1),values(1:k-1))
+
+         if(stat.ne.0) then
+           print *, 'MKL sparse creation failed because of stat error',stat,'exiting'
+           stop
+         endif
+
+         stat = mkl_sparse_convert_csr(coo_matrix,SPARSE_OPERATION_NON_TRANSPOSE,sparse_matrix%matrix)
+         if(stat.ne.0) then
+           print *, 'MKL sparse creation failed because of stat error',stat,'exiting'
+           stop
+         endif
+
+         sparse_matrix%descr%TYPE = SPARSE_MATRIX_TYPE_GENERAL
+
+         deallocate(rows)
+         deallocate(cols)
+         deallocate(values)
+     end subroutine
+     
+     subroutine explore_csr_matrix(sparse_matrix)
+       use iso_c_binding
+       type(sparse_matrix_type), intent(inout) :: sparse_matrix
+       integer :: stat
+       integer(c_int)        :: indexing
+       integer(c_int)        :: DIM_r, DIM_c
+       type(c_ptr)           :: rows_start_c, rows_end_c, col_indx_c, values_c
+       integer, pointer      :: rows_start_f(:), rows_end_f(:), col_indx_f(:)
+       real(kind=dp), pointer     :: values_f(:)
+       stat = mkl_sparse_d_export_csr(sparse_matrix%matrix, indexing, DIM_r,DIM_c,rows_start_c, rows_end_c, col_indx_c,values_c)
+       if(stat.ne.0) write (*,*) 'stat after export = ', stat, 'SPARSE_STATUS_INVALID_VALUE = ', SPARSE_STATUS_INVALID_VALUE
+       call c_f_pointer(rows_start_c, rows_start_f, [DIM_r])
+       call c_f_pointer(rows_end_c  , rows_end_f  , [DIM_r])
+       call c_f_pointer(col_indx_c  , col_indx_f  , [rows_end_f(DIM_r)-1])
+       call c_f_pointer(values_c    , values_f    , [rows_end_f(DIM_r)-1])
+       print *, 'indexing_csr',indexing
+       print *, 'shape(values_f)',shape(values_f)
+       print *, 'values of csr matrix',values_f(1:5)
+       print *, 'nrows_csr',DIM_r
+       print *, 'ncol_csr',DIM_c
+     end subroutine
+
      subroutine pinv_svd(A,m,n,Ainv)
        !A Moore-Penrose pseudo-inverse using single value decomposition
  

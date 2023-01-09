@@ -1039,9 +1039,15 @@ subroutine fit_chunk_ml(reservoir,model_parameters,grid)
     deallocate(b_trans)
 
     write(level_char,'(i0.2)') grid%level_index
+<<<<<<< HEAD
     !if(reservoir%assigned_region == 954) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_954_ocean_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
     !if(reservoir%assigned_region == 217) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_217_ocean_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
     !if(reservoir%assigned_region == 218) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_218_ocean_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
+=======
+    if(reservoir%assigned_region == 954) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_954_ocean_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    if(reservoir%assigned_region == 217) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_217_ocean_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    if(reservoir%assigned_region == 218) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_218_ocean_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
+>>>>>>> alexs_code
 
     call write_trained_res(reservoir,model_parameters,grid)
 
@@ -1139,9 +1145,15 @@ subroutine fit_chunk_hybrid(reservoir,model_parameters,grid)
     deallocate(b_trans)
 
     write(level_char,'(i0.2)') grid%level_index
+<<<<<<< HEAD
     if(reservoir%assigned_region == 690) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_690_slab_ocean_wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
     if(reservoir%assigned_region == 217) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_217_slab_ocean_wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
     if(reservoir%assigned_region == 218) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_218_slab_ocean_wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
+=======
+    if(reservoir%assigned_region == 690) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_690_slab_ocean_wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    if(reservoir%assigned_region == 217) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_217_slab_ocean_wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    if(reservoir%assigned_region == 218) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_218_slab_ocean_wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
+>>>>>>> alexs_code
 
     !call write_trained_res(reservoir,model_parameters,grid)
 
@@ -1442,6 +1454,7 @@ subroutine chunking_matmul_hybrid(reservoir,model_parameters,grid,batch_number,t
    return 
 end subroutine  
 
+<<<<<<< HEAD
 subroutine write_controller_file(model_parameters)
    type(model_parameters_type), intent(in) :: model_parameters
 
@@ -1464,6 +1477,44 @@ end subroutine
 
 subroutine write_trained_res(reservoir,model_parameters,grid)
   use mod_io, only : write_netcdf_2d_non_met_data, write_netcdf_1d_non_met_data_int, write_netcdf_1d_non_met_data_real
+=======
+subroutine write_trained_res_old(reservoir,model_parameters,grid)
+  use mod_io, only : write_netcdf_2d_non_met_data, write_netcdf_1d_non_met_data_int, write_netcdf_1d_non_met_data_real
+
+  type(reservoir_type), intent(in) :: reservoir
+  type(model_parameters_type), intent(in) :: model_parameters
+  type(grid_type), intent(in)             :: grid
+
+  character(len=:), allocatable :: file_path
+  character(len=4) :: worker_char
+  character(len=1) :: height_char
+
+  file_path = '/scratch/user/awikner/ML_SPEEDY_WEIGHTS/'
+
+  write(worker_char,'(i0.4)') reservoir%assigned_region
+  write(height_char,'(i0.1)') grid%level_index
+
+  if((reservoir%assigned_region == 0).and.(grid%level_index == 1)) then
+    call write_controller_file(model_parameters) 
+  endif 
+
+  call write_netcdf_2d_non_met_data(reservoir%win,'win',file_path//'worker_'//worker_char//'_level_'//height_char//'_win_'//trim(model_parameters%trial_name)//'.nc','unitless')
+  call write_netcdf_2d_non_met_data(reservoir%wout,'wout',file_path//'worker_'//worker_char//'_level_'//height_char//'_wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
+
+  call write_netcdf_1d_non_met_data_int(reservoir%rows,'rows',file_path//'worker_'//worker_char//'_level_'//height_char//'_rows_'//trim(model_parameters%trial_name)//'.nc','unitless')
+  call write_netcdf_1d_non_met_data_int(reservoir%cols,'cols',file_path//'worker_'//worker_char//'_level_'//height_char//'_cols_'//trim(model_parameters%trial_name)//'.nc','unitless')
+
+  call write_netcdf_1d_non_met_data_real(reservoir%vals,'vals',file_path//'worker_'//worker_char//'_level_'//height_char//'_vals_'//trim(model_parameters%trial_name)//'.nc','unitless')
+
+  call write_netcdf_1d_non_met_data_real(grid%mean,'mean',file_path//'worker_'//worker_char//'_level_'//height_char//'_mean_'//trim(model_parameters%trial_name)//'.nc','unitless')
+  call write_netcdf_1d_non_met_data_real(grid%std,'std',file_path//'worker_'//worker_char//'_level_'//height_char//'_std_'//trim(model_parameters%trial_name)//'.nc','unitless')
+
+end subroutine
+
+subroutine write_trained_res(reservoir,model_parameters,grid)
+  use mod_io, only : write_netcdf_2d_non_met_data_new, write_netcdf_1d_non_met_data_int_new, write_netcdf_1d_non_met_data_real_new, &
+                     write_netcdf_2d_non_met_data_new_double, write_netcdf_1d_non_met_data_real_new_double
+>>>>>>> alexs_code
 
   type(reservoir_type), intent(in) :: reservoir
   type(model_parameters_type), intent(in) :: model_parameters
@@ -1477,6 +1528,7 @@ subroutine write_trained_res(reservoir,model_parameters,grid)
   write(worker_char,'(i0.4)') reservoir%assigned_region
 
   print *, 'writing ML ocean',reservoir%assigned_region
+<<<<<<< HEAD
   call write_netcdf_2d_non_met_data(reservoir%win,'win',file_path//'worker_'//worker_char//'_ocean_'//trim(model_parameters%trial_name)//'.nc','unitless','win_x','win_y')
   call write_netcdf_2d_non_met_data(reservoir%wout,'wout',file_path//'worker_'//worker_char//'_ocean_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
 
@@ -1490,6 +1542,41 @@ subroutine write_trained_res(reservoir,model_parameters,grid)
 
 end subroutine
 
+=======
+  call write_netcdf_2d_non_met_data_new_double(reservoir%win,'win',file_path//'worker_'//worker_char//'_ocean_'//trim(model_parameters%trial_name)//'.nc','unitless','win_x','win_y')
+  call write_netcdf_2d_non_met_data_new_double(reservoir%wout,'wout',file_path//'worker_'//worker_char//'_ocean_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
+
+  call write_netcdf_1d_non_met_data_int_new(reservoir%rows,'rows',file_path//'worker_'//worker_char//'_ocean_'//trim(model_parameters%trial_name)//'.nc','unitless','rows_x')
+  call write_netcdf_1d_non_met_data_int_new(reservoir%cols,'cols',file_path//'worker_'//worker_char//'_ocean_'//trim(model_parameters%trial_name)//'.nc','unitless','cols_x')
+
+  call write_netcdf_1d_non_met_data_real_new_double(reservoir%vals,'vals',file_path//'worker_'//worker_char//'_ocean_'//trim(model_parameters%trial_name)//'.nc','unitless','vals_x')
+
+  call write_netcdf_1d_non_met_data_real_new_double(grid%mean,'mean',file_path//'worker_'//worker_char//'_ocean_'//trim(model_parameters%trial_name)//'.nc','unitless','mean_x')
+  call write_netcdf_1d_non_met_data_real_new_double(grid%std,'std',file_path//'worker_'//worker_char//'_ocean_'//trim(model_parameters%trial_name)//'.nc','unitless','std_x')
+
+end subroutine
+
+subroutine write_controller_file(model_parameters)
+   type(model_parameters_type), intent(in) :: model_parameters
+
+   character(len=:), allocatable :: file_path
+
+   file_path = '/scratch/user/awikner/ML_SPEEDY_WEIGHTS/'//trim(model_parameters%trial_name)//'_controller_file.txt'
+ 
+   open (10, file=file_path, status='unknown')
+
+   ! write to file
+   write(10,*)"-----------------------------------------------------------"
+   write(10,*)
+   write(10,*)"num_vert_levels:",model_parameters%num_vert_levels
+   write(10,*)"-----------------------------------------------------------"
+
+   ! close file
+   close(10) 
+
+end subroutine 
+
+>>>>>>> alexs_code
 subroutine trained_ocean_reservoir_prediction(reservoir,model_parameters,grid,reservoir_atmo,grid_atmo)
   use mod_linalg, only : mklsparse
   use mod_io, only : read_trained_ocean_res

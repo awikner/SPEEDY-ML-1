@@ -5,7 +5,10 @@ module mod_utilities
   use mpi
 
   implicit none
+<<<<<<< HEAD
   
+=======
+>>>>>>> alexs_code
   integer, parameter :: dp=selected_real_kind(14)  !Double precision (64 bit)
   integer, parameter :: sp = selected_real_kind(6, 37) !Single precison (32 bit)
   integer, parameter :: int_32 = int32
@@ -28,9 +31,27 @@ module mod_utilities
                       53.810, 57.521, 61.232, 64.942, 68.652, 72.362, 76.070, 79.777, &
                       83.479, 87.159/)
 
+<<<<<<< HEAD
 
   type grid_type
      !Grid derived type for a specific reservoir 
+=======
+  type sparse_matrix_type
+      !Type for containing sparse matrix
+      type(SPARSE_MATRIX_T)  matrix
+      type(MATRIX_DESCR)     descr
+
+  end type sparse_matrix_type
+
+  type grad_reg_comps_type
+      type(sparse_matrix_type), allocatable :: grad_reg_comps_sparse(:)
+      real(kind=dp), allocatable :: grad_reg_comps_dense(:,:,:)
+  end type grad_reg_comps_type
+
+
+  type grid_type
+     !Grid derived type for a specific reservoir
+>>>>>>> alexs_code
 
      !i j indices in 2d space of the data that the reservoir is fitted for the processor (wholegrid)
      integer :: res_xstart
@@ -51,7 +72,10 @@ module mod_utilities
      integer :: tdata_yend
      integer :: tdata_zstart
      integer :: tdata_zend
+<<<<<<< HEAD
      
+=======
+>>>>>>> alexs_code
      !ij indices for the input data for the processor (wholegrid indices)
      integer :: input_xstart
      integer :: input_xend
@@ -72,9 +96,15 @@ module mod_utilities
 
      !overlap
      integer :: overlap
+<<<<<<< HEAD
     
      !Vertical localization 
      integer :: num_vert_levels 
+=======
+
+     !Vertical localization
+     integer :: num_vert_levels
+>>>>>>> alexs_code
      integer :: vert_overlap
 
      !Descriptor of geographical region (options for now are tropics,
@@ -197,6 +227,10 @@ module mod_utilities
 
     !Leakage 
     real(kind=dp)              :: leakage
+<<<<<<< HEAD
+=======
+    logical                    :: use_leakage
+>>>>>>> alexs_code
 
     !COO sparse matrix holds row and col indexs
     integer, allocatable       :: rows(:)
@@ -204,7 +238,10 @@ module mod_utilities
     real(kind=dp), allocatable :: vals(:)
 
     integer                    :: k
+<<<<<<< HEAD
  
+=======
+>>>>>>> alexs_code
     integer                    :: reservoir_numinputs
 
     integer                    :: locality
@@ -216,7 +253,13 @@ module mod_utilities
     !Reservoir components Win, Wout, etc
     real(kind=dp), allocatable :: win(:,:)
     real(kind=dp), allocatable :: wout(:,:)
+<<<<<<< HEAD
     real(kind=dp), allocatable :: states(:,:)
+=======
+    real(kind=dp), allocatable :: states(:,:,:)
+    real(kind=dp), allocatable :: noiseless_states(:,:)
+    real(kind=dp), allocatable :: approx_grad_reg(:,:)
+>>>>>>> alexs_code
     real(kind=dp), allocatable :: augmented_states(:,:)
 
     !Batch stuff
@@ -240,15 +283,26 @@ module mod_utilities
     !and needs its own parameters
     integer :: logp_size_res
     integer :: logp_size_input
+<<<<<<< HEAD
   
+=======
+>>>>>>> alexs_code
     !LOGP bool gotta set this to false for vertical reservoirs away from the
     !surface
     logical :: logp_bool
 
     !Save reservoir state for later use
+<<<<<<< HEAD
     real(kind=dp), allocatable :: saved_state(:)
 
     !TISR relievent 
+=======
+    real(kind=dp), allocatable :: saved_state_training(:,:)
+    real(kind=dp), allocatable :: saved_state(:)
+    real(kind=dp), allocatable :: noiseless_saved_state(:)
+
+    !TISR relievent
+>>>>>>> alexs_code
     logical :: tisr_input_bool !This is the actual variable that determines
                                !which reservoir gets tisr. Just because
                                !model_parameter%toa_isr_bool is true doesnt
@@ -336,16 +390,42 @@ module mod_utilities
 
     !stuff related to noise
     real(kind=dp) :: noisemag !magnitude of gaussian noise
+<<<<<<< HEAD
 
     !The value of the prior [0,1]
     real(kind=dp) :: prior_val
    
+=======
+    !magnitude of the gradient regularization for the linearized
+    !noise method. Should be tuned to the typical noise magnitude squared
+    real(kind=dp) :: gradregmag
+    integer       :: noise_steps
+
+    !Training with multiple noise realizations
+    integer    :: noise_realizations
+
+    !Training with mean over noise realizations vs. noiseless training
+    logical    :: use_mean
+
+    !Training with noise or linearized regularization weighted by mean input vs.
+    !instantaneous input
+    logical                    :: use_mean_input !Use time-average for noise/lmnt scaling
+    logical                    :: use_mean_state !Use state-average for noise/lmnt scaling
+    real(kind=dp), allocatable :: mean_input(:)
+
+
+
+    !The value of the prior [0,1]
+    real(kind=dp) :: prior_val
+
+>>>>>>> alexs_code
     !Current local speedy state
     real(kind=dp), allocatable :: local_model(:)
 
     !Current outvec (prediction) for this reservoir
     real(kind=dp), allocatable :: outvec(:)
 
+<<<<<<< HEAD
     !Current ml component contribution of the outvec for this reservoir
     real(kind=dp), allocatable :: v_ml(:)
 
@@ -361,6 +441,28 @@ module mod_utilities
     real(kind=dp), allocatable :: full_sst(:,:,:)
 
     integer :: predictvars2d
+=======
+    !Current feedback for this reservoir
+    real(kind=dp), allocatable :: feedback(:)
+
+    !Linear Noise stuff
+    real(kind=dp), allocatable :: grad_reg(:,:)
+    real(kind=dp), allocatable :: reservoir_derivative(:,:)
+    !real(kind=dp), allocatable :: grad_reg_comps(:,:,:)
+    type(grad_reg_comps_type)  :: grad_reg_comps
+    integer :: grad_reg_num_sparse
+    integer :: grad_reg_num_of_batches
+    real(kind=dp) :: grad_reg_batch_mult
+    type(sparse_matrix_type) :: leakage_mat
+    
+
+    !TISR for the full year to save time reading and writing during prediction
+    real(kind=dp), allocatable :: full_tisr(:,:,:)
+
+    integer :: predictvars2d
+
+
+>>>>>>> alexs_code
   end type reservoir_type
 
   type model_parameters_type 
@@ -421,7 +523,10 @@ module mod_utilities
     character(len=3)  :: trial_number
     character(len=10) :: trial_date
     character(len=:), allocatable :: trial_name
+<<<<<<< HEAD
     character(len=:), allocatable :: trial_name_extra_end
+=======
+>>>>>>> alexs_code
 
     !Make sure SPEEDY code doesnt break ours
     logical :: run_speedy
@@ -490,6 +595,7 @@ module mod_utilities
     real(kind=dp), allocatable :: base_sst_grid(:,:)
     real(kind=dp), allocatable :: sea_mask(:,:)
 
+<<<<<<< HEAD
     type(opened_netcdf_type), allocatable :: opened_netcdf_files(:)
 
     logical :: non_stationary_ocn_climo
@@ -499,6 +605,8 @@ module mod_utilities
     real(kind=dp) :: current_sst_bias
 
     logical :: outvec_component_contribs
+=======
+>>>>>>> alexs_code
   end type model_parameters_type
  
   type main_type
@@ -531,7 +639,10 @@ module mod_utilities
   type speedy_data_type
     !Holds all of the 4d speedy variables in one 5d array
     real(kind=dp), allocatable :: speedyvariables(:,:,:,:,:)
+<<<<<<< HEAD
      
+=======
+>>>>>>> alexs_code
     !LogP is a special speedy variable
     real(kind=dp), allocatable :: speedy_logp(:,:,:)
   end type speedy_data_type
@@ -562,7 +673,11 @@ module mod_utilities
 
      !LogP is a special variable
      real(kind=dp), allocatable :: logp(:,:)
+<<<<<<< HEAD
   
+=======
+
+>>>>>>> alexs_code
      !Lets also keep some meta data in this type to make SPEEDY run
      integer :: istart !from rest=0, from restartfile=1, from era=2
      integer :: era_start !start from grid initial condition=0, Start from grid=1
@@ -618,6 +733,7 @@ module mod_utilities
  
   end type calendar_type 
 
+<<<<<<< HEAD
   type opened_netcdf_type
      logical :: is_opened
      logical :: is_closed
@@ -627,6 +743,8 @@ module mod_utilities
      character(len=:), allocatable :: filename
   end type opened_netcdf_type
 
+=======
+>>>>>>> alexs_code
   !Overload the standardize_data routine 
   interface standardize_data
    module procedure standardize_data_1d
@@ -636,7 +754,10 @@ module mod_utilities
    module procedure standardize_data_5d
    module procedure standardize_data_5d_logp
    module procedure standardize_data_5d_logp_tisr
+<<<<<<< HEAD
    module procedure standardize_data_5d_logp_tisr_local_region
+=======
+>>>>>>> alexs_code
   end interface 
 
   !Overload unstandardize_data routine  
@@ -853,12 +974,17 @@ module mod_utilities
 
       if((sum(inputdata**2)-sum(inputdata)**2/size(inputdata)) > 0) then
         mean_ = sum(inputdata)/size(inputdata)
+<<<<<<< HEAD
  
         mean_ = mean_ !+ 2.0
         !sqrt(sum((inputdata(i,:,:,j,:) - mean_)**2)/size(inputdata(i,:,:,j,:)))
         std_ = sqrt(sum((inputdata-mean_)**2)/size(inputdata))
  
         std_ = std_ !* 1.2
+=======
+        !sqrt(sum((inputdata(i,:,:,j,:) - mean_)**2)/size(inputdata(i,:,:,j,:)))
+        std_ = sqrt(sum((inputdata-mean_)**2)/size(inputdata))
+>>>>>>> alexs_code
         print *, 'std_',std_
         if(std_ > 0.2) then
           !Subtracts the mean out and then divides by the std
@@ -1012,6 +1138,7 @@ module mod_utilities
       return
     end subroutine
 
+<<<<<<< HEAD
     subroutine standardize_data_5d_logp_tisr_local_region(reservoir,grid,inputdata,logp,tisr,mean,std)
       type(reservoir_type), intent(in) :: reservoir 
       type(grid_type), intent(in)      :: grid
@@ -1131,6 +1258,8 @@ module mod_utilities
          enddo
       enddo
     end subroutine 
+=======
+>>>>>>> alexs_code
     subroutine standardize_data_5d_logp_tisr(reservoir,inputdata,logp,tisr,mean,std)
       type(reservoir_type), intent(in) :: reservoir
 
@@ -1373,6 +1502,7 @@ module mod_utilities
 
       return
     end subroutine
+<<<<<<< HEAD
    
     function gaussian_noise_1d_function(inputdata,noisemag) result(noisy_data)
       !Adds gaussian noise to the input data
@@ -1381,14 +1511,30 @@ module mod_utilities
       real(kind=dp), allocatable  :: noisy_data(:)
 
       real(kind=dp), allocatable   :: gaussnoise(:)
+=======
+
+    function gaussian_noise_1d_function(inputdata,noisemag,use_mean_input,mean_input,use_mean_state) result(noisy_data)
+      !Adds gaussian noise to the input data
+      real(kind=dp), intent(in)  :: inputdata(:), mean_input(:)
+      real(kind=dp), intent(in)  :: noisemag
+      logical, intent(in)        :: use_mean_input, use_mean_state
+      real(kind=dp), allocatable  :: noisy_data(:)
+
+      real(kind=dp), allocatable   :: gaussnoise(:),noise_scaling(:)
+>>>>>>> alexs_code
       real(kind=dp), parameter     :: sigma=1.0, mean=0.0
 
       allocate(gaussnoise(size(inputdata,1)))
       allocate(noisy_data(size(inputdata,1)))
+<<<<<<< HEAD
+=======
+      allocate(noise_scaling(size(inputdata,1)))
+>>>>>>> alexs_code
 
       !call init_random_seed(33)
 
       call random_gaussian_gen_1d(gaussnoise,sigma,mean)
+<<<<<<< HEAD
 
       !TODO
       noisy_data = inputdata+gaussnoise*noisemag*inputdata
@@ -1398,6 +1544,25 @@ module mod_utilities
       return
     end function
   
+=======
+      if(use_mean_input) then
+        noise_scaling = mean_input
+      else
+        noise_scaling = inputdata
+      endif
+      if(use_mean_state) then
+        noisy_data = inputdata+gaussnoise*noisemag*sqrt(sum(noise_scaling**2,1)/size(noise_scaling,1))
+      else
+        noisy_data = inputdata+gaussnoise*noisemag*noise_scaling
+      endif
+
+      deallocate(gaussnoise)
+      deallocate(noise_scaling)
+
+      return
+    end function
+
+>>>>>>> alexs_code
     function gaussian_noise_1d_function_precip(inputdata,noisemag,grid,model_parameters) result(noisy_data)
       !Adds gaussian noise to the input data and makes sure the noise to
       !precipitation is not done in log space
@@ -1419,23 +1584,35 @@ module mod_utilities
 
       call random_gaussian_gen_1d(gaussnoise,sigma,mean)
 
+<<<<<<< HEAD
       !!!!TODO NOTE 
       noisy_data(1:grid%precip_start-1) = inputdata(1:grid%precip_start-1)+gaussnoise(1:grid%precip_start-1)*noisemag*inputdata(1:grid%precip_start-1)
 
       !Precip stuff
 
+=======
+      noisy_data(1:grid%precip_start-1) = inputdata(1:grid%precip_start-1)+gaussnoise(1:grid%precip_start-1)*noisemag*inputdata(1:grid%precip_start-1)
+
+>>>>>>> alexs_code
       allocate(temp(grid%precip_end - grid%precip_start))
 
       temp = inputdata(grid%precip_start:grid%precip_end)
 
+<<<<<<< HEAD
       !temp = temp*grid%std(grid%precip_mean_std_idx) + grid%mean(grid%precip_mean_std_idx)
 
       !temp = model_parameters%precip_epsilon * (e_constant**temp - 1)
+=======
+      temp = temp*grid%std(grid%precip_mean_std_idx) + grid%mean(grid%precip_mean_std_idx)
+
+      temp = model_parameters%precip_epsilon * (e_constant**temp - 1)
+>>>>>>> alexs_code
 
       temp = temp + gaussnoise(grid%precip_start:grid%precip_end)*noisemag*temp
 
       !temp = abs(temp) !NOTE make sure we dont get any negative numbers
 
+<<<<<<< HEAD
       !temp = log(1 + temp/model_parameters%precip_epsilon)
 
       !temp = temp - grid%mean(grid%precip_mean_std_idx)
@@ -1446,6 +1623,16 @@ module mod_utilities
 
  
       !Rest of stuff
+=======
+      temp = log(1 + temp/model_parameters%precip_epsilon)
+
+      temp = temp - grid%mean(grid%precip_mean_std_idx)
+
+      temp = temp/grid%std(grid%precip_mean_std_idx)
+
+      noisy_data(grid%precip_start:grid%precip_end) = temp
+
+>>>>>>> alexs_code
       noisy_data(grid%precip_end + 1:size(inputdata,1)) = inputdata(grid%precip_end + 1:size(inputdata,1))+gaussnoise(grid%precip_end + 1:size(inputdata,1))*noisemag*inputdata(grid%precip_end + 1:size(inputdata,1))
 
       deallocate(gaussnoise) 
@@ -1651,7 +1838,12 @@ module mod_utilities
     subroutine advancelorenz(x,y,z,xdot,ydot,zdot,alpha)
       real(kind=dp), parameter :: s=10.0_dp, r=28.0_dp, b=2.66667_dp
       real(kind=dp), intent(in) :: x, y, z, alpha
+<<<<<<< HEAD
       real(kind=dp), intent(out) :: xdot, ydot, zdot 
+=======
+      real(kind=dp), intent(out) :: xdot, ydot, zdot
+
+>>>>>>> alexs_code
       xdot = s*(y - x)
       ydot = (r+alpha)*x - y - x*z
       zdot = x*y - b*z
@@ -1800,6 +1992,7 @@ module mod_utilities
        deallocate(copy)
      end subroutine
 
+<<<<<<< HEAD
      function linear_increase_then_platue(start_val,final_val,current_time,platue_time) result(val)
        !Function that should be used to make a linearly increasing sst bias that
        !starts at start_val and linearly increases to final_val at platue_time
@@ -1818,4 +2011,6 @@ module mod_utilities
 
        return 
     end function 
+=======
+>>>>>>> alexs_code
 end module mod_utilities
