@@ -17,7 +17,7 @@ program main
   integer :: standardizing_vars, i, j, k , t, prediction_num
 
   logical :: runspeedy = .False.
-  logical :: trained_model = .False.
+  logical :: trained_model = .True.
   logical :: slab_model
  
   real(kind=dp), allocatable :: test_state(:), test_feedback(:)
@@ -67,7 +67,7 @@ program main
   !---This is for debugging----!
   !You can run the code with a small number of processors and look at a few
   !regions of the globe 
-  if(res%model_parameters%irank == 4) res%model_parameters%region_indices(1) = 954
+  !if(res%model_parameters%irank == 4) res%model_parameters%region_indices(1) = 954
   !if(res%model_parameters%irank == 2) res%model_parameters%region_indices(1) = 552
   !if(res%model_parameters%irank == 3)  res%model_parameters%region_indices(1) = 36
 
