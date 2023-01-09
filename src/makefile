@@ -161,7 +161,7 @@ imp2.exe: move_mod $(FILES)
 	$(COMPILE) $(COMCONV) $(COMOTT) $(FILES) -o imp2.exe $(COMLIB)
 
 imp3.exe: move_mod $(FILES)
-	$(COMPILE) $(COMCONV) $(COMOTT) $(FILES) -o imp2.exe $(COMLIB)
+	$(COMPILE) $(COMCONV) $(COMOTT) $(FILES) -o imp3.exe $(COMLIB)
 
 imp_gcc.exe: $(FILES)
 	$(COMPILE) $(COMCONV) $(COMOTT) $(FILES) -o imp_gcc.exe $(COMLIB)

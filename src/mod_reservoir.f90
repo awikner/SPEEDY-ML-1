@@ -20,10 +20,10 @@ subroutine initialize_model_parameters(model_parameters,processor,num_of_procs)
 
    model_parameters%ml_only = .False.
    
-   write_training_weights = .False.
+   write_training_weights = .True.
 
-   model_parameters%num_predictions = 1
-   model_parameters%trial_name = '6000_20_20_20_beta_res0.001_beta_model_1.0_prior_0.0_overlap1_vertlevel_1_precip_epsilon0.001_ocean_model7d_0.0001beta_sigma0.6_noise1_precipwabs_dp' !14d_0.9rho_10noise_beta0.001_20years'  
+   model_parameters%num_predictions = 0
+   model_parameters%trial_name = '6000_20_20_20_beta_res0.001_beta_model_1.0_prior_0.0_overlap1_vertlevel_1_precip_epsilon0.001_ocean_model7d_0.0001beta_sigma0.6_noise1_preciplognoise_dp' !14d_0.9rho_10noise_beta0.001_20years'  
    !model_parameters%trial_name = '6000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_4_vertlap_6_slab_ocean_model_true_precip_true'
    !'4000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_4_vertlap_2_full_timestep_1'
    !model_parameters%trial_name = '4000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_4_vertlap_2_full_test_climate_all_tisr_longer'
@@ -31,7 +31,7 @@ subroutine initialize_model_parameters(model_parameters,processor,num_of_procs)
 
    model_parameters%discardlength = 24*10!7
    model_parameters%traininglength = 227760 - 24*10!166440 - 24*10  !87600*2+24*10!3+24*10!188280 !254040 !81600!188280!0!0!0!166600!81600 !00!58000!67000!77000
-   model_parameters%predictionlength = 8760*30!*31 + 24*5!8760*30 + 24*5!504!8760*11 + 24*5 !504!0
+   model_parameters%predictionlength = 8760*10!*31 + 24*5!8760*30 + 24*5!504!8760*11 + 24*5 !504!0
    model_parameters%synclength = 24*14 !24*14*2 !+ 180*24
    model_parameters%timestep = 6!1 !6
    model_parameters%timestep_slab = 24*7!24*7!*14!*2!*7

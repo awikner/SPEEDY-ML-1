@@ -1428,19 +1428,19 @@ module mod_utilities
 
       temp = inputdata(grid%precip_start:grid%precip_end)
 
-      temp = temp*grid%std(grid%precip_mean_std_idx) + grid%mean(grid%precip_mean_std_idx)
+      !temp = temp*grid%std(grid%precip_mean_std_idx) + grid%mean(grid%precip_mean_std_idx)
 
-      temp = model_parameters%precip_epsilon * (e_constant**temp - 1)
+      !temp = model_parameters%precip_epsilon * (e_constant**temp - 1)
 
       temp = temp + gaussnoise(grid%precip_start:grid%precip_end)*noisemag*temp
 
-      temp = abs(temp) !NOTE make sure we dont get any negative numbers
+      !temp = abs(temp) !NOTE make sure we dont get any negative numbers
 
-      temp = log(1 + temp/model_parameters%precip_epsilon)
+      !temp = log(1 + temp/model_parameters%precip_epsilon)
 
-      temp = temp - grid%mean(grid%precip_mean_std_idx)
+      !temp = temp - grid%mean(grid%precip_mean_std_idx)
 
-      temp = temp/grid%std(grid%precip_mean_std_idx)
+      !temp = temp/grid%std(grid%precip_mean_std_idx)
 
       noisy_data(grid%precip_start:grid%precip_end) = temp
 
