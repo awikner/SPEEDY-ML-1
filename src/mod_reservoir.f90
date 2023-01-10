@@ -1,36 +1,21 @@
-<<<<<<< HEAD
-module mod_reservoir 
-  USE, INTRINSIC :: IEEE_ARITHMETIC
-  use MKL_SPBLAS
-  use mod_utilities, only : dp, main_type, reservoir_type, grid_type, model_parameters_type
-=======
 module mod_reservoir
   USE, INTRINSIC :: IEEE_ARITHMETIC
   use MKL_SPBLAS
   use mod_utilities, only : dp, main_type, reservoir_type, grid_type, model_parameters_type, sparse_matrix_type, grad_reg_comps_type
->>>>>>> alexs_code
 
   implicit none
 
   integer :: global_time_step
-<<<<<<< HEAD
   logical :: write_training_weights
 contains
 
 subroutine initialize_model_parameters(model_parameters,processor,num_of_procs)
    use mpires, only : distribute_prediction_marker
-=======
-contains
-
-subroutine initialize_model_parameters(model_parameters,processor,num_of_procs)
-   use mpires, only : distribute_prediction_marker, stop_mpi_safe
->>>>>>> alexs_code
 
    !bunch of reservoir parameters
    type(model_parameters_type)     :: model_parameters
    integer, intent(in) :: processor, num_of_procs
 
-<<<<<<< HEAD
    model_parameters%number_of_regions = 1152!*4 
 
    model_parameters%ml_only = .False.
@@ -47,28 +32,12 @@ subroutine initialize_model_parameters(model_parameters,processor,num_of_procs)
    model_parameters%discardlength = 24*10!7
    model_parameters%traininglength = 227760 - 24*10!166440 - 24*10  !87600*2+24*10!3+24*10!188280 !254040 !81600!188280!0!0!0!166600!81600 !00!58000!67000!77000
    model_parameters%predictionlength = 8760*10!*31 + 24*5!8760*30 + 24*5!504!8760*11 + 24*5 !504!0
-=======
-   model_parameters%number_of_regions = 1152
-
-   model_parameters%ml_only = .False.
-
-   model_parameters%num_predictions = 1
-   model_parameters%trial_name = '6000_20_20_20_beta_res0.001_beta_model_1.0_prior_0.0_overlap1_vertlevel_1_precip_epsilon0.001_ocean_model7d_0.0001beta_sigma0.6_noprecipabs_dp' !14d_0.9rho_10noise_beta0.001_20years'
-   !model_parameters%trial_name = '6000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_4_vertlap_6_slab_ocean_model_true_precip_true'
-   !'4000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_4_vertlap_2_full_timestep_1'
-   !model_parameters%trial_name = '4000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_4_vertlap_2_full_test_climate_all_tisr_longer'
-
-   model_parameters%discardlength = 24*10!7
-   model_parameters%traininglength = 166440 - 24*10!227760 - 24*10!43800 + 24*10!87600*2+24*10!3+24*10!188280 !254040 !81600!188280!0!0!0!166600!81600 !00!58000!67000!77000
-   model_parameters%predictionlength = 24*365*20!*31 + 24*5!8760*30 + 24*5!504!8760*11 + 24*5 !504!0
->>>>>>> alexs_code
    model_parameters%synclength = 24*14 !24*14*2 !+ 180*24
    model_parameters%timestep = 6!1 !6
    model_parameters%timestep_slab = 24*7!24*7!*14!*2!*7
 
    global_time_step = model_parameters%timestep
 
-<<<<<<< HEAD
    model_parameters%slab_ocean_model_bool = .True.
    model_parameters%train_on_sst_anomalies = .False.
 
@@ -80,16 +49,6 @@ subroutine initialize_model_parameters(model_parameters,processor,num_of_procs)
 
    model_parameters%timeofday_bool = .False.
  
-=======
-   model_parameters%slab_ocean_model_bool = .False.
-   model_parameters%train_on_sst_anomalies = .False.
-
-   model_parameters%precip_bool = .True. !.False.
-   model_parameters%precip_epsilon = 0.001!0.0005
-
-   model_parameters%timeofday_bool = .False.
-
->>>>>>> alexs_code
    model_parameters%full_predictvars = 4
    model_parameters%full_heightlevels = 8
 
@@ -103,7 +62,6 @@ subroutine initialize_model_parameters(model_parameters,processor,num_of_procs)
 
    model_parameters%noisy = .True.
 
-<<<<<<< HEAD
    model_parameters%regional_vary = .True.  
 
    model_parameters%using_prior = .True.
@@ -116,19 +74,6 @@ subroutine initialize_model_parameters(model_parameters,processor,num_of_procs)
 
 end subroutine 
   
-=======
-   model_parameters%regional_vary = .True.
-
-   model_parameters%using_prior = .False.
-
-   model_parameters%model_noise = 0.0_dp
-
-   !if(model_parameters%precip_bool) call stop_mpi_safe()
-
-   call distribute_prediction_marker(model_parameters)
-
-end subroutine
->>>>>>> alexs_code
 
 subroutine allocate_res_new(reservoir,grid,model_parameters)
   !Routine to allocate all of the reservoir arrays
@@ -136,35 +81,16 @@ subroutine allocate_res_new(reservoir,grid,model_parameters)
   use resdomain, only : set_reservoir_by_region
 
   type(reservoir_type), intent(inout)     :: reservoir
-<<<<<<< HEAD
   type(grid_type), intent(inout)          :: grid 
-=======
-  type(grid_type), intent(inout)          :: grid
->>>>>>> alexs_code
   type(model_parameters_type), intent(in) :: model_parameters
 
   integer :: nodes_per_input
 
-<<<<<<< HEAD
-=======
-
-
->>>>>>> alexs_code
   reservoir%m = 6000!6000
 
   reservoir%deg = 6
   reservoir%radius = 0.9
   reservoir%beta_res = 0.001_dp
-<<<<<<< HEAD
-  reservoir%beta_model = 1.0_dp !0.01_dp!1.0_dp
-  reservoir%sigma = 0.5_dp!/6.0_dp
-
-  reservoir%leakage = 1.0_dp!/3.0_dp!1.0!1.0_dp/12.0_dp!6.0_dp
-   
-  reservoir%prior_val = 0.0_dp
- 
-  reservoir%density = reservoir%deg/real(reservoir%m,kind=dp)
-=======
   reservoir%beta_model = 1.0_dp
   reservoir%sigma = 0.5_dp
 
@@ -183,33 +109,22 @@ subroutine allocate_res_new(reservoir,grid,model_parameters)
 
   reservoir%prior_val = 0.0_dp
 
-  reservoir%density = reservoir%deg/reservoir%m
->>>>>>> alexs_code
+  reservoir%density = reservoir%deg/real(reservoir%m,kind=dp)
 
   call set_reservoir_by_region(reservoir,grid)
 
   if(reservoir%logp_bool) then
     reservoir%logp_size_input = grid%inputxchunk*grid%inputychunk !((grid%resxchunk+grid%overlap*2)*(grid%resychunk+1*grid%overlap))
-<<<<<<< HEAD
-  else  
-    reservoir%logp_size_input = 0
-  endif 
-=======
   else
     reservoir%logp_size_input = 0
   endif
->>>>>>> alexs_code
 
   if(reservoir%sst_bool_input) then
     reservoir%sst_size_input = grid%inputxchunk*grid%inputychunk
   else
     reservoir%sst_size_input = 0
   endif
-<<<<<<< HEAD
    
-=======
-
->>>>>>> alexs_code
   if(reservoir%logp_bool) then
     reservoir%logp_size_res = grid%resxchunk*grid%resychunk
   else
@@ -236,55 +151,33 @@ subroutine allocate_res_new(reservoir,grid,model_parameters)
 
   if(reservoir%tisr_input_bool) then
     reservoir%tisr_size_res = grid%resxchunk*grid%resychunk
-<<<<<<< HEAD
   else 
     reservoir%tisr_size_res = 0
   endif 
-=======
-  else
-    reservoir%tisr_size_res = 0
-  endif
->>>>>>> alexs_code
 
   if(reservoir%tisr_input_bool) then
     reservoir%tisr_size_input = grid%inputxchunk*grid%inputychunk!((grid%resxchunk+grid%overlap*2)*(grid%resychunk+1*grid%overlap))
   else
     reservoir%tisr_size_input = 0
-<<<<<<< HEAD
   endif 
-=======
-  endif
->>>>>>> alexs_code
 
   reservoir%chunk_size = grid%resxchunk*grid%resychunk*reservoir%local_predictvars*grid%reszchunk + reservoir%logp_size_res + reservoir%precip_size_res
   reservoir%chunk_size_prediction = grid%resxchunk*grid%resychunk*reservoir%local_predictvars*grid%reszchunk + reservoir%logp_size_res + reservoir%precip_size_res
   reservoir%chunk_size_speedy = grid%resxchunk*grid%resychunk*reservoir%local_predictvars*grid%reszchunk + reservoir%logp_size_res
 
-<<<<<<< HEAD
   if(model_parameters%ml_only) then 
     reservoir%chunk_size_speedy = 0
   endif 
   
-=======
-  if(model_parameters%ml_only) then
-    reservoir%chunk_size_speedy = 0
-  endif
-
->>>>>>> alexs_code
   reservoir%locality = 0
 
   reservoir%locality = grid%inputxchunk*grid%inputychunk*grid%inputzchunk*reservoir%local_predictvars + reservoir%logp_size_input + reservoir%precip_size_input + reservoir%tisr_size_input + reservoir%sst_size_input - reservoir%chunk_size
 
-<<<<<<< HEAD
   print *, 'grid%inputxchunk,grid%inputychunk,grid%inputzchunk,reservoir%local_predictvars',grid%inputxchunk,grid%inputychunk,grid%inputzchunk,reservoir%local_predictvars
   print *,'grid%inputxchunk*grid%inputychunk*grid%inputzchunk*reservoir%local_predictvars,reservoir%logp_size_input, reservoir%precip_size_input,reservoir%tisr_size_input,reservoir%sst_size_input',grid%inputxchunk*grid%inputychunk*grid%inputzchunk*reservoir%local_predictvars,reservoir%logp_size_input, reservoir%precip_size_input,reservoir%tisr_size_input,reservoir%sst_size_input
   nodes_per_input = NINT(dble(reservoir%m)/(dble(reservoir%chunk_size)+dble(reservoir%locality)))
   reservoir%n = nodes_per_input*(reservoir%chunk_size+reservoir%locality)
   print *, 'reservoir%chunk_size,reservoir%locality,nodes_per_input,n',reservoir%chunk_size,reservoir%locality, nodes_per_input,reservoir%n
-=======
-  nodes_per_input = NINT(dble(reservoir%m)/(dble(reservoir%chunk_size)+dble(reservoir%locality)))
-  reservoir%n = nodes_per_input*(reservoir%chunk_size+reservoir%locality)
->>>>>>> alexs_code
   reservoir%k = reservoir%density*reservoir%n*reservoir%n
   reservoir%reservoir_numinputs = reservoir%chunk_size+reservoir%locality
 
@@ -293,12 +186,9 @@ subroutine allocate_res_new(reservoir,grid,model_parameters)
   if(.not. allocated(reservoir%wout)) allocate(reservoir%wout(reservoir%chunk_size_prediction,reservoir%n+reservoir%chunk_size_speedy))
   if(.not. allocated(reservoir%rows)) allocate(reservoir%rows(reservoir%k))
   if(.not. allocated(reservoir%cols)) allocate(reservoir%cols(reservoir%k))
-<<<<<<< HEAD
-=======
   if(reservoir%use_mean_input) then
     if(.not. allocated(reservoir%mean_input)) allocate(reservoir%mean_input(reservoir%reservoir_numinputs))
   endif
->>>>>>> alexs_code
 end subroutine
 
 subroutine gen_res(reservoir)
@@ -308,7 +198,6 @@ subroutine gen_res(reservoir)
 
    real(kind=dp)              :: eigs,average
    real(kind=dp), allocatable :: newvals(:)
-<<<<<<< HEAD
    
    call makesparse(reservoir) 
 
@@ -322,21 +211,6 @@ subroutine gen_res(reservoir)
    
    if(reservoir%assigned_region == 0) then
      print *, 'region num', reservoir%assigned_region 
-=======
-
-   call makesparse(reservoir)
-
-   call sparse_eigen(reservoir,reservoir%n*10,6,eigs)
-
-   allocate(newvals(reservoir%k))
-   newvals = (reservoir%vals/eigs)*reservoir%radius
-   reservoir%vals = newvals
-
-   call mklsparse(reservoir)
-
-   if(reservoir%assigned_region == 0) then
-     print *, 'region num', reservoir%assigned_region
->>>>>>> alexs_code
      print *, 'radius', reservoir%radius
      print *, 'degree', reservoir%deg
      print *, 'max res', maxval(reservoir%vals)
@@ -344,15 +218,6 @@ subroutine gen_res(reservoir)
      print *, 'average', sum(reservoir%vals)/size(reservoir%vals)
      print *, 'k',reservoir%k
      print *, 'eig',eigs
-<<<<<<< HEAD
-   endif 
-   
-   return 
-end subroutine   
-
-subroutine train_reservoir(reservoir,grid,model_parameters)
-   use mod_utilities, only : init_random_seed
-=======
    endif
 
    return
@@ -361,7 +226,6 @@ end subroutine
 subroutine train_reservoir(reservoir,grid,model_parameters)
    use mod_utilities, only : init_random_seed
    use mod_linalg, only: mklsparse_diag
->>>>>>> alexs_code
 
    type(reservoir_type), intent(inout)        :: reservoir
    type(model_parameters_type), intent(inout) :: model_parameters
@@ -371,23 +235,14 @@ subroutine train_reservoir(reservoir,grid,model_parameters)
    integer :: un_noisy_sync
    integer :: betas_res, betas_model,priors
    integer :: vert_loop
-<<<<<<< HEAD
-    
-   real(kind=dp), allocatable :: ip(:),rand(:),average
-=======
 
    real(kind=dp), allocatable :: ip(:),rand(:),average,mean_input(:,:),leakage_diag(:)
->>>>>>> alexs_code
    real(kind=dp), allocatable :: test_beta_res(:), test_beta_model(:), test_priors(:)
    real(kind=dp), allocatable :: states_x_states_original_copy(:,:)
 
    character(len=:), allocatable :: base_trial_name
    character(len=50) :: beta_res_char,beta_model_char,prior_char
-<<<<<<< HEAD
-  
-=======
 
->>>>>>> alexs_code
    if(grid%bottom) then
     reservoir%logp_bool = .True.
     reservoir%tisr_input_bool = .True.
@@ -400,11 +255,7 @@ subroutine train_reservoir(reservoir,grid,model_parameters)
     reservoir%precip_bool = model_parameters%precip_bool
 
     reservoir%m = 6000
-<<<<<<< HEAD
     
-=======
-
->>>>>>> alexs_code
   else
     reservoir%sst_climo_bool = .False.
     reservoir%logp_bool = .False.
@@ -413,7 +264,6 @@ subroutine train_reservoir(reservoir,grid,model_parameters)
     reservoir%precip_input_bool = .False.
     reservoir%precip_bool = .False.
   endif
-<<<<<<< HEAD
  
    call get_training_data(reservoir,model_parameters,grid,1)
  
@@ -424,17 +274,6 @@ subroutine train_reservoir(reservoir,grid,model_parameters)
 
    q = reservoir%n/reservoir%reservoir_numinputs
    !q = reservoir%reservoir_numinputs
-=======
-
-   call get_training_data(reservoir,model_parameters,grid,1)
-
-   !NOTE moving this to get_training_data
-   !call allocate_res_new(reservoir,grid,model_parameters)
-
-   call gen_res(reservoir)
-
-   q = reservoir%n/reservoir%reservoir_numinputs
->>>>>>> alexs_code
 
    if(reservoir%assigned_region == 0) print *, 'q',q,'n',reservoir%n,'num inputs',reservoir%reservoir_numinputs
 
@@ -447,21 +286,6 @@ subroutine train_reservoir(reservoir,grid,model_parameters)
 
       call random_number(rand)
 
-<<<<<<< HEAD
-      ip = (-1d0 + 2*rand) 
-      
-      reservoir%win((i-1)*q+1:i*q,i) = reservoir%sigma*ip
-      !reservoir%win(:,i) = reservoir%sigma*ip
-   enddo
-   
-   deallocate(rand)
-   deallocate(ip) 
-
-   print *,'starting reservoir_layer'   
-  
-   call initialize_chunk_training(reservoir,model_parameters) 
-   
-=======
       ip = (-1d0 + 2*rand)
 
       reservoir%win((i-1)*q+1:i*q,i) = reservoir%sigma*ip
@@ -478,15 +302,11 @@ subroutine train_reservoir(reservoir,grid,model_parameters)
      reservoir%mean_input = sqrt(sum(reservoir%trainingdata**2,2)/size(reservoir%trainingdata,2))
    endif
 
->>>>>>> alexs_code
    do i=1,model_parameters%timestep
       print *, 'loop number',i
       !if(reservoir%assigned_region == 954) print *, 'reservoir%trainingdata(eservoir_numinputs,1:40)',reservoir%trainingdata(reservoir%reservoir_numinputs,1:40)
       if(reservoir%assigned_region == 954 .and. .not. model_parameters%ml_only) print *, 'reservoir%imperfect_model_states(:,i)',reservoir%imperfect_model_states(:,i)
       if(reservoir%assigned_region == 954) print *, 'reservoir%trainingdata(:,i)', reservoir%trainingdata(:,i)
-<<<<<<< HEAD
-
-=======
       if(reservoir%gradregmag > 0.0_dp) then
           if((i.eq.1).and.(reservoir%use_leakage)) then
             allocate(leakage_diag(reservoir%n))
@@ -503,46 +323,32 @@ subroutine train_reservoir(reservoir,grid,model_parameters)
             reservoir%grad_reg_comps%grad_reg_comps_dense = 0.0_dp
           endif
       endif
->>>>>>> alexs_code
       if(model_parameters%ml_only) then
         call reservoir_layer_chunking_ml(reservoir,model_parameters,grid,reservoir%trainingdata(:,i:model_parameters%traininglength:model_parameters%timestep))
       else
         call reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,reservoir%trainingdata(:,i:model_parameters%traininglength:model_parameters%timestep),reservoir%imperfect_model_states(:,i:model_parameters%traininglength:model_parameters%timestep))
-<<<<<<< HEAD
       endif 
-=======
       endif
       if(reservoir%gradregmag > 0.0_dp) then
           deallocate(reservoir%grad_reg_comps%grad_reg_comps_sparse)
           if(reservoir%noise_steps > reservoir%grad_reg_num_sparse) deallocate(reservoir%grad_reg_comps%grad_reg_comps_dense)
       endif
->>>>>>> alexs_code
 
    enddo
 
    if((model_parameters%slab_ocean_model_bool).and.(grid%bottom)) then
-<<<<<<< HEAD
      if(allocated(reservoir%imperfect_model_states)) deallocate(reservoir%imperfect_model_states) 
    else  
      deallocate(reservoir%trainingdata)
      if(allocated(reservoir%imperfect_model_states)) deallocate(reservoir%imperfect_model_states)
    endif 
  
-=======
-     if(allocated(reservoir%imperfect_model_states)) deallocate(reservoir%imperfect_model_states)
-   else
-     deallocate(reservoir%trainingdata)
-     if(allocated(reservoir%imperfect_model_states)) deallocate(reservoir%imperfect_model_states)
-   endif
-
->>>>>>> alexs_code
    print *, 'fitting',reservoir%assigned_region
 
    if(model_parameters%ml_only) then
      call fit_chunk_ml(reservoir,model_parameters,grid)
    else
      call fit_chunk_hybrid(reservoir,model_parameters,grid)
-<<<<<<< HEAD
    endif 
    print *, 'cleaning up', reservoir%assigned_region
    call clean_batch(reservoir)
@@ -552,17 +358,6 @@ end subroutine
 subroutine get_training_data(reservoir,model_parameters,grid,loop_index)
    use mod_utilities, only : era_data_type, speedy_data_type, &
                              standardize_sst_data_3d, & 
-=======
-   endif
-   print *, 'cleaning up', reservoir%assigned_region
-   call clean_batch(reservoir)
-
-end subroutine
-
-subroutine get_training_data(reservoir,model_parameters,grid,loop_index)
-   use mod_utilities, only : era_data_type, speedy_data_type, &
-                             standardize_sst_data_3d, &
->>>>>>> alexs_code
                              standardize_data_given_pars_5d_logp_tisr, &
                              standardize_data_given_pars_5d_logp, &
                              standardize_data_given_pars5d, &
@@ -597,11 +392,7 @@ subroutine get_training_data(reservoir,model_parameters,grid,loop_index)
 
    call get_current_time_delta_hour(calendar,model_parameters%discardlength+model_parameters%traininglength+model_parameters%synclength)
 
-<<<<<<< HEAD
    print *, 'reading era states' 
-=======
-   print *, 'reading era states'
->>>>>>> alexs_code
 
    !Read data in stride and whats only needed for this loop of training
    call read_era(reservoir,grid,model_parameters,calendar%startyear,calendar%currentyear,era_data)
@@ -613,11 +404,7 @@ subroutine get_training_data(reservoir,model_parameters,grid,loop_index)
    end where
    !print *, 'shape(era_data%eravariables)',shape(era_data%eravariables)
    !print *, 'era_data',era_data%eravariables(1,:,:,:,10:11)
-<<<<<<< HEAD
-   !Make sure tisr doesnt have zeroes 
-=======
    !Make sure tisr doesnt have zeroes
->>>>>>> alexs_code
    if(reservoir%tisr_input_bool) then
     where(era_data%era_tisr < 0.0_dp)
       era_data%era_tisr = 0.0_dp
@@ -634,29 +421,15 @@ subroutine get_training_data(reservoir,model_parameters,grid,loop_index)
     if(reservoir%assigned_region == 954) print *, 'era_data%era_precip(1,1,100) after average',era_data%era_precip(1,1,100:150)
     if(reservoir%assigned_region == 954) print *, 'era_data%era_precip/model_parameters%precip_epsilon',era_data%era_precip(1,1,100:150)/model_parameters%precip_epsilon
     era_data%era_precip =  log(1 + era_data%era_precip/model_parameters%precip_epsilon)
-<<<<<<< HEAD
     if(reservoir%assigned_region == 954) print *, 'era_data%era_precip(1,1,100:150) after',era_data%era_precip(1,1,100:150) 
   endif
 
   if(reservoir%sst_bool .and. .not. model_parameters%train_on_sst_anomalies) then   
-=======
-    if(reservoir%assigned_region == 954) print *, 'era_data%era_precip(1,1,100:150) after',era_data%era_precip(1,1,100:150)
-  endif
-
-  !NOTE TODO change back
-  if(reservoir%sst_bool .and. .not. model_parameters%train_on_sst_anomalies) then
->>>>>>> alexs_code
     where(era_data%era_sst < 272.0_dp)
       era_data%era_sst = 272.0_dp
     end where
   endif
 
-<<<<<<< HEAD
-=======
-  !if(reservoir%assigned_region == 954) print *, 'era_data%eravariables(4,2,2,:,1)', era_data%eravariables(4,2,2,:,1)
-  !if(reservoir%assigned_region == 954) print *, ' era_data%era_tisr(:,1:6)',era_data%era_tisr(4,4,1:6)
-
->>>>>>> alexs_code
   if(reservoir%assigned_region == 954) then
     print *, 'era max min temp before',maxval(era_data%eravariables(1,:,:,:,:)),minval(era_data%eravariables(1,:,:,:,:))
     print *, 'era max min u-wind before',maxval(era_data%eravariables(2,:,:,:,:)),minval(era_data%eravariables(2,:,:,:,:))
@@ -670,28 +443,16 @@ subroutine get_training_data(reservoir,model_parameters,grid,loop_index)
   endif
   !Get mean and standard deviation for the first stride of data and use those
   !values for the rest of the program
-<<<<<<< HEAD
   if(loop_index == 1) then   
      !Standardize each variable using local std and mean and save the std and
      !mean
 
      !Get number of height levels * vars + 2d variables 
-=======
-  if(loop_index == 1) then
-     !Standardize each variable using local std and mean and save the std and
-     !mean
-
-     !Get number of height levels * vars + 2d variables
->>>>>>> alexs_code
      mean_std_length = model_parameters%full_predictvars*grid%inputzchunk
      if(reservoir%logp_bool) then
        mean_std_length = mean_std_length + 1
        grid%logp_mean_std_idx = mean_std_length
-<<<<<<< HEAD
      endif 
-=======
-     endif
->>>>>>> alexs_code
 
      if(reservoir%tisr_input_bool) then
         mean_std_length = mean_std_length + 1
@@ -701,38 +462,22 @@ subroutine get_training_data(reservoir,model_parameters,grid,loop_index)
      if(reservoir%precip_bool)  then
        mean_std_length = mean_std_length + 1
        grid%precip_mean_std_idx = mean_std_length
-<<<<<<< HEAD
      endif 
 
      if(reservoir%sst_bool) then
         mean_std_length = mean_std_length + 1 
         grid%sst_mean_std_idx = mean_std_length 
      endif 
-=======
-     endif
-
-     if(reservoir%sst_bool) then
-        mean_std_length = mean_std_length + 1
-        grid%sst_mean_std_idx = mean_std_length
-     endif
->>>>>>> alexs_code
 
      allocate(grid%mean(mean_std_length),grid%std(mean_std_length))
 
      if((reservoir%tisr_input_bool).and.(reservoir%logp_bool)) then
-<<<<<<< HEAD
         !grid%tisr_mean_std_idx = reservoir%local_predictvars*reservoir%local_heightlevels_input+2 
-=======
-        !grid%tisr_mean_std_idx = reservoir%local_predictvars*reservoir%local_heightlevels_input+2
->>>>>>> alexs_code
         !grid%logp_mean_std_idx = reservoir%local_predictvars*reservoir%local_heightlevels_input+1
 
         print *, 'mean_std_length',mean_std_length
         call standardize_data(reservoir,era_data%eravariables,era_data%era_logp,era_data%era_tisr,grid%mean,grid%std)
-<<<<<<< HEAD
         !call standardize_data(reservoir,grid,era_data%eravariables,era_data%era_logp,era_data%era_tisr,grid%mean,grid%std)
-=======
->>>>>>> alexs_code
      elseif(reservoir%logp_bool) then
         !grid%logp_mean_std_idx = reservoir%local_predictvars*reservoir%local_heightlevels_input+1
 
@@ -743,7 +488,6 @@ subroutine get_training_data(reservoir,model_parameters,grid,loop_index)
         call standardize_data(reservoir,era_data%eravariables,era_data%era_tisr,grid%mean,grid%std)
      else
         call standardize_data(reservoir,era_data%eravariables,grid%mean,grid%std)
-<<<<<<< HEAD
      endif 
    
      if(reservoir%sst_bool) then
@@ -763,27 +507,6 @@ subroutine get_training_data(reservoir,model_parameters,grid,loop_index)
      endif
    else 
      !Standardize the data from the first stride's std and mean 
-=======
-     endif
-
-     if(reservoir%sst_bool) then
-        !grid%sst_mean_std_idx = mean_std_length
-        call standardize_sst_data_3d(era_data%era_sst,grid%mean(grid%sst_mean_std_idx),grid%std(grid%sst_mean_std_idx),reservoir%sst_bool_input)
-     else
-        reservoir%sst_bool_input = .False.
-     endif
-
-     if(reservoir%precip_bool) then
-        if(reservoir%assigned_region == 954) print *, 'era_data%era_precip before',era_data%era_precip(1,1,1:100)
-        !call total_precip_over_a_period(era_data%era_precip,model_parameters%timestep)
-        if(reservoir%assigned_region == 954) print *, 'era max min precip rate after summing',maxval(era_data%era_precip), minval(era_data%era_precip)
-        if(reservoir%assigned_region == 954) print *, 'era_data%era_precip after',era_data%era_precip(1,1,1:100)
-        call standardize_data_3d(era_data%era_precip,grid%mean(grid%precip_mean_std_idx),grid%std(grid%precip_mean_std_idx))
-        if(reservoir%assigned_region == 954) print *, 'precip mean and std',grid%mean(grid%precip_mean_std_idx),grid%std(grid%precip_mean_std_idx)
-     endif
-   else
-     !Standardize the data from the first stride's std and mean
->>>>>>> alexs_code
      if((reservoir%tisr_input_bool).and.(reservoir%logp_bool)) then
         call standardize_data_given_pars_5d_logp_tisr(grid%mean,grid%std,era_data%eravariables,era_data%era_logp,era_data%era_tisr)
      elseif(reservoir%logp_bool) then
@@ -793,11 +516,7 @@ subroutine get_training_data(reservoir,model_parameters,grid,loop_index)
      else
         call standardize_data_given_pars5d(grid%mean,grid%std,era_data%eravariables)
      endif
-<<<<<<< HEAD
    endif 
-=======
-   endif
->>>>>>> alexs_code
 
    if(reservoir%assigned_region == 954) then
      print *, 'era max min temp after',maxval(era_data%eravariables(1,:,:,:,:)),minval(era_data%eravariables(1,:,:,:,:))
@@ -812,11 +531,7 @@ subroutine get_training_data(reservoir,model_parameters,grid,loop_index)
      print *, 'res%mean,res%std',grid%mean,grid%std
    endif
 
-<<<<<<< HEAD
    !NOTE moving this here to we can get the training data 
-=======
-   !NOTE moving this here to we can get the training data
->>>>>>> alexs_code
    call allocate_res_new(reservoir,grid,model_parameters)
 
    !Lets get some training data
@@ -828,18 +543,13 @@ subroutine get_training_data(reservoir,model_parameters,grid,loop_index)
    grid%logp_end = 0
    grid%sst_start = 0
    grid%sst_end = 0
-<<<<<<< HEAD
   
-=======
-
->>>>>>> alexs_code
    grid%atmo3d_start = 1
    grid%atmo3d_end = model_parameters%full_predictvars*grid%inputxchunk*grid%inputychunk*grid%inputzchunk
 
    grid%predict_start = 1
    grid%predict_end = grid%atmo3d_end
    print *, 'grid%atmo3d_start,grid%atmo3d_end',grid%atmo3d_start,grid%atmo3d_end
-<<<<<<< HEAD
    print *, 'shape(reservoir%trainingdata(grid%atmo3d_start:grid%atmo3d_end,:))',shape(reservoir%trainingdata(grid%atmo3d_start:grid%atmo3d_end,:)) 
    print *, 'shape(reshape(era_data%eravariables,(/grid%atmo3d_end,size(era_data%eravariables,5)/)))',shape(reshape(era_data%eravariables,(/grid%atmo3d_end,size(era_data%eravariables,5)/)))
    reservoir%trainingdata(grid%atmo3d_start:grid%atmo3d_end,:) = reshape(era_data%eravariables,(/grid%atmo3d_end,size(era_data%eravariables,5)/))
@@ -851,19 +561,6 @@ subroutine get_training_data(reservoir,model_parameters,grid,loop_index)
 
      grid%predict_end = grid%logp_end
    endif 
-=======
-   print *, 'shape(reservoir%trainingdata(grid%atmo3d_start:grid%atmo3d_end,:))',shape(reservoir%trainingdata(grid%atmo3d_start:grid%atmo3d_end,:))
-   print *, 'shape(reshape(era_data%eravariables,(/grid%atmo3d_end,size(era_data%eravariables,5)/)))',shape(reshape(era_data%eravariables,(/grid%atmo3d_end,size(era_data%eravariables,5)/)))
-   reservoir%trainingdata(grid%atmo3d_start:grid%atmo3d_end,:) = reshape(era_data%eravariables,(/grid%atmo3d_end,size(era_data%eravariables,5)/))
-
-   if(reservoir%logp_bool) then
-     grid%logp_start = grid%atmo3d_end + 1
-     grid%logp_end = grid%atmo3d_end + reservoir%logp_size_input
-     reservoir%trainingdata(grid%logp_start:grid%logp_end,:) = reshape(era_data%era_logp,(/reservoir%logp_size_input,size(era_data%eravariables,5)/))
-
-     grid%predict_end = grid%logp_end
-   endif
->>>>>>> alexs_code
 
    if(reservoir%precip_bool) then
      grid%precip_start = grid%atmo3d_end + reservoir%logp_size_input + 1
@@ -872,20 +569,12 @@ subroutine get_training_data(reservoir,model_parameters,grid,loop_index)
 
      grid%predict_end = grid%precip_end
    endif
-<<<<<<< HEAD
     
-=======
-
->>>>>>> alexs_code
    if(reservoir%sst_bool_input) then
      grid%sst_start = grid%atmo3d_end + reservoir%logp_size_input + reservoir%precip_size_input + 1
      grid%sst_end =  grid%sst_start + reservoir%sst_size_input - 1
      reservoir%trainingdata(grid%sst_start:grid%sst_end,:) = reshape(era_data%era_sst,(/reservoir%sst_size_input,size(era_data%eravariables,5)/))
-<<<<<<< HEAD
    endif 
-=======
-   endif
->>>>>>> alexs_code
 
    if(reservoir%tisr_input_bool) then
      grid%tisr_start = grid%atmo3d_end + reservoir%logp_size_input + reservoir%precip_size_input + reservoir%sst_size_input + 1
@@ -893,11 +582,7 @@ subroutine get_training_data(reservoir,model_parameters,grid,loop_index)
      reservoir%trainingdata(grid%tisr_start:grid%tisr_end,:) = reshape(era_data%era_tisr,(/reservoir%tisr_size_input,size(era_data%eravariables,5)/))
    endif
 
-<<<<<<< HEAD
    
-=======
-
->>>>>>> alexs_code
    if(reservoir%assigned_region == 954) print *, 'reservoir%trainingdata(:,1000)',reservoir%trainingdata(:,1000)
    if(reservoir%assigned_region == 954) print *, 'reservoir%trainingdata(grid%tisr_start,1000:1100)',reservoir%trainingdata(grid%tisr_start,1000:1100)
    deallocate(era_data%eravariables)
@@ -913,19 +598,11 @@ subroutine get_training_data(reservoir,model_parameters,grid,loop_index)
 
 
    !Portion of the routine for getting speedy (imperfect model) data
-<<<<<<< HEAD
    
    if(.not. model_parameters%ml_only) then
      print *, 'reading model states'
      call read_model_states(reservoir,grid,model_parameters,calendar%startyear,calendar%currentyear,speedy_data)
    
-=======
-
-   if(.not. model_parameters%ml_only) then
-     print *, 'reading model states'
-     call read_model_states(reservoir,grid,model_parameters,calendar%startyear,calendar%currentyear,speedy_data)
-
->>>>>>> alexs_code
      !Lets get imperfect model states
      where(speedy_data%speedyvariables(4,:,:,:,:) < 0.000001)
         speedy_data%speedyvariables(4,:,:,:,:) = 0.000001_dp
@@ -954,21 +631,12 @@ subroutine get_training_data(reservoir,model_parameters,grid,loop_index)
 
      if(reservoir%logp_bool) then
         reservoir%imperfect_model_states(reservoir%local_predictvars*grid%resxchunk*grid%resychunk*grid%reszchunk+1:reservoir%chunk_size_speedy,:) = reshape(speedy_data%speedy_logp,(/grid%resxchunk*grid%resychunk,size(speedy_data%speedyvariables,5)/))
-<<<<<<< HEAD
      endif 
 
      deallocate(speedy_data%speedyvariables)
      deallocate(speedy_data%speedy_logp)
    endif 
 end subroutine 
-=======
-     endif
-
-     deallocate(speedy_data%speedyvariables)
-     deallocate(speedy_data%speedy_logp)
-   endif
-end subroutine
->>>>>>> alexs_code
 
 subroutine get_prediction_data(reservoir,model_parameters,grid,start_index,length)
    use mod_utilities, only : era_data_type, speedy_data_type, &
@@ -977,19 +645,12 @@ subroutine get_prediction_data(reservoir,model_parameters,grid,start_index,lengt
                              standardize_data_given_pars5d, &
                              standardize_data, &
                              standardize_data_given_pars3d, &
-<<<<<<< HEAD
                              total_precip_over_a_period, &
                              opened_netcdf_type
 
    use mod_calendar
    use speedy_res_interface, only : read_era, read_model_states, &
                                     read_era_netcdf_opened
-=======
-                             total_precip_over_a_period
-
-   use mod_calendar
-   use speedy_res_interface, only : read_era, read_model_states
->>>>>>> alexs_code
    use resdomain, only : standardize_speedy_data
 
    type(reservoir_type), intent(inout)        :: reservoir
@@ -997,7 +658,6 @@ subroutine get_prediction_data(reservoir,model_parameters,grid,start_index,lengt
    type(grid_type), intent(inout)             :: grid
 
    integer, intent(in) :: start_index,length
-<<<<<<< HEAD
    
    integer                :: hours_into_first_year, start_year
    integer                :: start_time_memory_index, end_time_memory_index
@@ -1006,19 +666,10 @@ subroutine get_prediction_data(reservoir,model_parameters,grid,start_index,lengt
 
    type(era_data_type)    :: era_data
    type(speedy_data_type) :: speedy_data  
-=======
-
-   integer                :: hours_into_first_year, start_year
-   integer                :: start_time_memory_index, end_time_memory_index
-
-   type(era_data_type)    :: era_data
-   type(speedy_data_type) :: speedy_data
->>>>>>> alexs_code
 
    call get_current_time_delta_hour(calendar,start_index)
 
    call numof_hours_into_year(calendar%currentyear,calendar%currentmonth,calendar%currentday,calendar%currenthour,hours_into_first_year)
-<<<<<<< HEAD
  
    start_year = calendar%currentyear
 
@@ -1040,17 +691,6 @@ subroutine get_prediction_data(reservoir,model_parameters,grid,start_index,lengt
      call read_era(reservoir,grid,model_parameters,start_year,calendar%currentyear,era_data,1)
    endif 
    start_time_memory_index = hours_into_first_year   
-=======
-
-   start_year = calendar%currentyear
-
-   call get_current_time_delta_hour(calendar,start_index+length)
-
-   !Read data in stride and whats only needed for this loop of training
-   call read_era(reservoir,grid,model_parameters,start_year,calendar%currentyear,era_data,1)
-
-   start_time_memory_index = hours_into_first_year
->>>>>>> alexs_code
    end_time_memory_index = start_time_memory_index + length
 
    !Match units for specific humidity
@@ -1060,27 +700,19 @@ subroutine get_prediction_data(reservoir,model_parameters,grid,start_index,lengt
     era_data%eravariables(4,:,:,:,:) = 0.000001_dp
    end where
 
-<<<<<<< HEAD
    !Make sure tisr doesnt have zeroes 
-=======
-   !Make sure tisr doesnt have zeroes
->>>>>>> alexs_code
    if(reservoir%tisr_input_bool) then
     where(era_data%era_tisr < 0.0_dp)
       era_data%era_tisr = 0.0_dp
     end where
    endif
 
-<<<<<<< HEAD
    if(reservoir%sst_bool .and. .not. model_parameters%train_on_sst_anomalies) then 
      !NOTE Trying to give a distinction between land and sea ice
      !where(era_data%era_sst < -1) 
      !  era_data%era_sst = 271.0_dp
      !end where 
      !Note maybe we should make it 271.5 
-=======
-   if(reservoir%sst_bool .and. .not. model_parameters%train_on_sst_anomalies) then
->>>>>>> alexs_code
      where(era_data%era_sst < 272.0_dp)
        era_data%era_sst = 272.0_dp
      end where
@@ -1098,13 +730,8 @@ subroutine get_prediction_data(reservoir,model_parameters,grid,start_index,lengt
     era_data%era_precip =  log(1 + era_data%era_precip/model_parameters%precip_epsilon)
     if(reservoir%assigned_region == 954) print *, 'era_data%era_precip(1,1,100:150) after',era_data%era_precip(1,1,100:150)
   endif
-<<<<<<< HEAD
 
 
-=======
-  !grid%mean(:) = 0
-  !grid%std(:) = 1
->>>>>>> alexs_code
   !Standardize the data from mean and std of training data
   if((reservoir%tisr_input_bool).and.(reservoir%logp_bool)) then
      call standardize_data_given_pars_5d_logp_tisr(grid%mean,grid%std,era_data%eravariables,era_data%era_logp,era_data%era_tisr)
@@ -1118,43 +745,25 @@ subroutine get_prediction_data(reservoir,model_parameters,grid,start_index,lengt
 
   if(reservoir%sst_bool_input) then
      call standardize_data_given_pars3d(era_data%era_sst,grid%mean(grid%sst_mean_std_idx),grid%std(grid%sst_mean_std_idx))
-<<<<<<< HEAD
   endif 
-=======
-  endif
->>>>>>> alexs_code
 
   if(reservoir%precip_bool) then
      call standardize_data_given_pars3d(era_data%era_precip,grid%mean(grid%precip_mean_std_idx),grid%std(grid%precip_mean_std_idx))
   endif
-<<<<<<< HEAD
  
   if(allocated(reservoir%predictiondata)) then
      deallocate(reservoir%predictiondata)
   endif 
-=======
-
-  if(allocated(reservoir%predictiondata)) then
-     deallocate(reservoir%predictiondata)
-  endif
->>>>>>> alexs_code
 
    !Lets get some prediction data
    allocate(reservoir%predictiondata(reservoir%reservoir_numinputs,length/model_parameters%timestep))
 
    reservoir%predictiondata(grid%atmo3d_start:grid%atmo3d_end,:) = reshape(era_data%eravariables(:,:,:,:,start_time_memory_index:end_time_memory_index:model_parameters%timestep),[grid%atmo3d_end,length/model_parameters%timestep])
 
-<<<<<<< HEAD
    if(reservoir%logp_bool) then 
      reservoir%predictiondata(grid%logp_start:grid%logp_end,:) = reshape(era_data%era_logp(:,:,start_time_memory_index:end_time_memory_index:model_parameters%timestep),[reservoir%logp_size_input,length/model_parameters%timestep])
    endif
   
-=======
-   if(reservoir%logp_bool) then
-     reservoir%predictiondata(grid%logp_start:grid%logp_end,:) = reshape(era_data%era_logp(:,:,start_time_memory_index:end_time_memory_index:model_parameters%timestep),[reservoir%logp_size_input,length/model_parameters%timestep])
-   endif
-
->>>>>>> alexs_code
    if(reservoir%precip_bool) then
      reservoir%predictiondata(grid%precip_start:grid%precip_end,:) = reshape(era_data%era_precip(:,:,start_time_memory_index:end_time_memory_index:model_parameters%timestep),[reservoir%precip_size_input,length/model_parameters%timestep])
    endif
@@ -1176,53 +785,29 @@ subroutine get_prediction_data(reservoir,model_parameters,grid,start_index,lengt
 
    if(allocated(era_data%era_sst)) then
      deallocate(era_data%era_sst)
-<<<<<<< HEAD
    endif 
-=======
-   endif
->>>>>>> alexs_code
 
    if(allocated(era_data%era_precip)) then
      deallocate(era_data%era_precip)
    endif
-<<<<<<< HEAD
  
    print *, 'shape(reservoir%predictiondata) mod_res',shape(reservoir%predictiondata)
 
-=======
-
-   print *, 'shape(reservoir%predictiondata) mod_res',shape(reservoir%predictiondata)
-
-   !print *, 'reservoir%predictiondata(:,5)',reservoir%predictiondata(:,5)
-
->>>>>>> alexs_code
    if(.not. model_parameters%ml_only) then
      !Portion of the routine for getting speedy (imperfect model) data
      print *, 'reading model states'
      call read_model_states(reservoir,grid,model_parameters,start_year,calendar%currentyear,speedy_data,1)
-<<<<<<< HEAD
    
-=======
-
->>>>>>> alexs_code
      !Lets get imperfect model states
      where(speedy_data%speedyvariables(4,:,:,:,:) < 0.000001)
         speedy_data%speedyvariables(4,:,:,:,:) = 0.000001_dp
      end where
 
-<<<<<<< HEAD
      call standardize_speedy_data(reservoir,grid,speedy_data) 
 
      if(allocated(reservoir%imperfect_model_states)) then
        deallocate(reservoir%imperfect_model_states)
      endif 
-=======
-     call standardize_speedy_data(reservoir,grid,speedy_data)
-
-     if(allocated(reservoir%imperfect_model_states)) then
-       deallocate(reservoir%imperfect_model_states)
-     endif
->>>>>>> alexs_code
 
      allocate(reservoir%imperfect_model_states(reservoir%chunk_size_speedy,length/model_parameters%timestep))
 
@@ -1232,36 +817,21 @@ subroutine get_prediction_data(reservoir,model_parameters,grid,start_index,lengt
 
      if(reservoir%logp_bool) then
         reservoir%imperfect_model_states(reservoir%local_predictvars*grid%resxchunk*grid%resychunk*grid%reszchunk+1:reservoir%chunk_size_speedy,:) = reshape(speedy_data%speedy_logp(:,:,start_time_memory_index:end_time_memory_index:model_parameters%timestep),[grid%resxchunk*grid%resychunk,length/model_parameters%timestep])
-<<<<<<< HEAD
      endif 
      deallocate(speedy_data%speedyvariables)
      deallocate(speedy_data%speedy_logp)
    endif   
 
 end subroutine 
-=======
-     endif
-     deallocate(speedy_data%speedyvariables)
-     deallocate(speedy_data%speedy_logp)
-   endif
-
-end subroutine
->>>>>>> alexs_code
 
 subroutine initialize_prediction(reservoir,model_parameters,grid)
    use mod_calendar
    use mpires, only        : mpi_res
    use mod_io, only        : read_netcdf_3d
    use mod_utilities, only : xgrid, ygrid
-<<<<<<< HEAD
    
    type(reservoir_type), intent(inout)        :: reservoir
    type(grid_type), intent(inout)             :: grid 
-=======
-
-   type(reservoir_type), intent(inout)        :: reservoir
-   type(grid_type), intent(inout)             :: grid
->>>>>>> alexs_code
    type(model_parameters_type), intent(inout) :: model_parameters
 
    integer :: q,i,num_inputs,j,k
@@ -1291,7 +861,6 @@ subroutine initialize_prediction(reservoir,model_parameters,grid)
 
    if(reservoir%tisr_input_bool) then
       call get_full_tisr(reservoir,model_parameters,grid)
-<<<<<<< HEAD
    endif 
 
    if(model_parameters%non_stationary_ocn_climo) then 
@@ -1301,28 +870,17 @@ subroutine initialize_prediction(reservoir,model_parameters,grid)
    if(.not.((model_parameters%slab_ocean_model_bool).and.(grid%bottom))) then
       deallocate(reservoir%predictiondata)
    endif 
-=======
-   endif
-
-   if(.not.((model_parameters%slab_ocean_model_bool).and.(grid%bottom))) then
-      deallocate(reservoir%predictiondata)
-   endif
->>>>>>> alexs_code
 
    allocate(reservoir%local_model(reservoir%chunk_size_speedy))
    allocate(reservoir%outvec(reservoir%chunk_size_prediction))
    allocate(reservoir%feedback(reservoir%reservoir_numinputs))
 
-<<<<<<< HEAD
    if(model_parameters%outvec_component_contribs) then
      allocate(reservoir%v_ml(reservoir%chunk_size_prediction))
      allocate(reservoir%v_p(reservoir%chunk_size_prediction))
    endif 
 
    if(model_parameters%slab_ocean_model_bool .and. mpi_res%is_root .and. grid%bottom .and. reservoir%assigned_region == 0) then
-=======
-   if(model_parameters%slab_ocean_model_bool .and. mpi_res%is_root .and. grid%bottom .and. reservoir%assigned_region == 0 ) then
->>>>>>> alexs_code
      print *, 'doing sea mask and default values'
      allocate(model_parameters%base_sst_grid(xgrid, ygrid))
      allocate(model_parameters%sea_mask(xgrid, ygrid))
@@ -1336,40 +894,23 @@ subroutine initialize_prediction(reservoir,model_parameters,grid)
 
      if(model_parameters%train_on_sst_anomalies) then
        call read_netcdf_3d('sst','/scratch/user/awikner/ERA_5/regridded_era_sst_climatology1981_1999_gcc.nc',temp3d_2)
-<<<<<<< HEAD
      endif 
  
-=======
-     endif
-
->>>>>>> alexs_code
      if(.not. model_parameters%train_on_sst_anomalies) then
      where(temp3d < 272.0_dp)
        temp3d = 272.0_dp
      end where
-<<<<<<< HEAD
      endif 
-=======
-     endif
->>>>>>> alexs_code
 
      model_parameters%base_sst_grid = temp3d(:,:,1)
 
      if(model_parameters%train_on_sst_anomalies) then
         model_parameters%base_sst_grid =  model_parameters%base_sst_grid - temp3d_2(:,:,1)
-<<<<<<< HEAD
      endif 
 
      print *, 'shape(temp3d)',shape(temp3d)
      do i=1,xgrid
         do j=1, ygrid  
-=======
-     endif
-
-     print *, 'shape(temp3d)',shape(temp3d)
-     do i=1,xgrid
-        do j=1, ygrid
->>>>>>> alexs_code
            if(all(temp3d(i,j,:) < 273.1)) then
              print *, 'land/permanent ice at',i,j,model_parameters%base_sst_grid(i,j)
              model_parameters%sea_mask(i,j) = 1.0
@@ -1377,7 +918,6 @@ subroutine initialize_prediction(reservoir,model_parameters,grid)
              model_parameters%sea_mask(i,j) = 0.0
            endif
          enddo
-<<<<<<< HEAD
      enddo 
      deallocate(temp3d)
    endif
@@ -1386,16 +926,6 @@ end subroutine
 subroutine get_full_tisr(reservoir,model_parameters,grid)
    use mpires, only        : mpi_res
    use mod_io, only        : read_3d_file_parallel 
-=======
-     enddo
-     deallocate(temp3d)
-   endif
-end subroutine
-
-subroutine get_full_tisr(reservoir,model_parameters,grid)
-   use mpires, only        : mpi_res
-   use mod_io, only        : read_3d_file_parallel
->>>>>>> alexs_code
    use mod_utilities, only : standardize_data_given_pars3d
 
    type(reservoir_type), intent(inout)        :: reservoir
@@ -1404,11 +934,7 @@ subroutine get_full_tisr(reservoir,model_parameters,grid)
 
    character(len=:), allocatable :: file_path
    character(len=:), allocatable :: tisr_file
-<<<<<<< HEAD
  
-=======
-
->>>>>>> alexs_code
    file_path = '/scratch/user/awikner/ERA_5/2012/'
    tisr_file = file_path//'toa_incident_solar_radiation_2012_regridded_classic4.nc'
 
@@ -1416,7 +942,6 @@ subroutine get_full_tisr(reservoir,model_parameters,grid)
    print *, 'isr_mean_std_idx,grid%mean(grid%tisr_mean_std_idx),grid%std(grid%tisr_mean_std_idx)',grid%tisr_mean_std_idx,grid%mean(grid%tisr_mean_std_idx),grid%std(grid%tisr_mean_std_idx)
    call standardize_data_given_pars3d(reservoir%full_tisr,grid%mean(grid%tisr_mean_std_idx),grid%std(grid%tisr_mean_std_idx))
 
-<<<<<<< HEAD
 end subroutine  
 
 subroutine get_full_sst_climo(reservoir,model_parameters,grid)
@@ -1446,8 +971,6 @@ subroutine get_full_sst_climo(reservoir,model_parameters,grid)
       call standardize_data_given_pars3d(reservoir%full_sst,grid%mean(grid%sst_mean_std_idx),grid%std(grid%sst_mean_std_idx))
    endif 
 
-=======
->>>>>>> alexs_code
 end subroutine
 
 subroutine start_prediction(reservoir,model_parameters,grid,prediction_number)
@@ -1460,38 +983,23 @@ subroutine start_prediction(reservoir,model_parameters,grid,prediction_number)
    model_parameters%current_trial_number = prediction_number
 
    call get_prediction_data(reservoir,model_parameters,grid,model_parameters%traininglength+model_parameters%prediction_markers(prediction_number),model_parameters%synclength+100)
-<<<<<<< HEAD
   
    call synchronize_print(reservoir,grid,reservoir%predictiondata(:,1:model_parameters%synclength/model_parameters%timestep-1),reservoir%saved_state,model_parameters%synclength/model_parameters%timestep-1)
   
-=======
-
-   call synchronize_print(reservoir,grid,reservoir%predictiondata(:,1:model_parameters%synclength/model_parameters%timestep-1),reservoir%saved_state,model_parameters%synclength/model_parameters%timestep-1)
-
->>>>>>> alexs_code
    if(reservoir%assigned_region == 36)  print *, 'reservoir%predictiondata(:,model_parameters%synclength/model_parameters%timestep)',reservoir%predictiondata(:,model_parameters%synclength/model_parameters%timestep)
    if(reservoir%assigned_region == 36 .and. .not. model_parameters%ml_only)  print *, 'reservoir%imperfect_model_states(:,model_parameters%synclength/model_parameters%timestep-1)',reservoir%imperfect_model_states(:,model_parameters%synclength/model_parameters%timestep-1)
 
    reservoir%feedback = reservoir%predictiondata(:,model_parameters%synclength/model_parameters%timestep)
 
    if(.not. model_parameters%ml_only) then
-<<<<<<< HEAD
      reservoir%local_model = reservoir%imperfect_model_states(:,model_parameters%synclength/model_parameters%timestep+1)
    endif 
 end subroutine 
-=======
-     reservoir%local_model = reservoir%imperfect_model_states(:,model_parameters%synclength/model_parameters%timestep-1)
-   endif
-end subroutine
->>>>>>> alexs_code
 
 subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingdata)
    use mpires
    use mod_utilities, only : gaussian_noise_1d_function, gaussian_noise_1d_function_precip
-<<<<<<< HEAD
-=======
    use mod_linalg, only: mklsparse_matrix
->>>>>>> alexs_code
 
    type(reservoir_type), intent(inout)      :: reservoir
    type(model_parameters_type) , intent(in) :: model_parameters
