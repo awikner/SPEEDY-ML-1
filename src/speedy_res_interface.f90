@@ -1,12 +1,8 @@
 module speedy_res_interface
     
    use mod_utilities, only : dp, speedy_data_type, era_data_type, state_vector_type, &
-<<<<<<< HEAD
                              reservoir_type, grid_type, model_parameters_type, &
                              opened_netcdf_type
-=======
-                             reservoir_type, grid_type, model_parameters_type
->>>>>>> alexs_code
    use mod_atparam, only : ix,il,kx
    use mod_physvar, only : ug1, vg1, tg1, qg1, phig1, pslg1
    use mod_tsteps, only : currentstep
@@ -249,7 +245,6 @@ module speedy_res_interface
    !end subroutine 
    
 
-<<<<<<< HEAD
   subroutine read_era_netcdf_opened(reservoir,grid,model_parameters,start_year,end_year,era_data,netcdf_files,timestep_arg)
      use mpires, only : mpi_res
      use mod_io, only : read_era_data_parallel,read_3d_file_parallel, read_era_data_parallel_old, &
@@ -441,8 +436,6 @@ module speedy_res_interface
     endif
   end subroutine
 
-=======
->>>>>>> alexs_code
   subroutine read_era(reservoir,grid,model_parameters,start_year,end_year,era_data,timestep_arg)
      use mpires, only : mpi_res
      use mod_io, only : read_era_data_parallel,read_3d_file_parallel, read_era_data_parallel_old, &
