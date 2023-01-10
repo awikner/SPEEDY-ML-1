@@ -365,6 +365,12 @@ module mod_utilities
     !instantaneous input
     logical                    :: use_mean_input !Use time-average for noise/lmnt scaling
     logical                    :: use_mean_state !Use state-average for noise/lmnt scaling
+
+    !Training with multiple noise realizations
+    integer    :: noise_realizations
+
+    !Training with mean over noise realizations vs. noiseless training
+    logical    :: use_mean
     real(kind=dp), allocatable :: mean_input(:)
 
 
