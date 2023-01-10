@@ -228,7 +228,9 @@ module mod_utilities
     !Reservoir components Win, Wout, etc
     real(kind=dp), allocatable :: win(:,:)
     real(kind=dp), allocatable :: wout(:,:)
-    real(kind=dp), allocatable :: states(:,:)
+    real(kind=dp), allocatable :: states(:,:,:)
+    real(kind=dp), allocatable :: noiseless_states(:,:)
+    real(kind=dp), allocatable :: approx_grad_reg(:,:)
     real(kind=dp), allocatable :: augmented_states(:,:)
 
     !Batch stuff
@@ -259,6 +261,8 @@ module mod_utilities
 
     !Save reservoir state for later use
     real(kind=dp), allocatable :: saved_state(:)
+    real(kind=dp), allocatable :: saved_state_training(:,:)
+    real(kind=dp), allocatable :: noiseless_saved_state(:)
 
     !TISR relievent
     logical :: tisr_input_bool !This is the actual variable that determines
