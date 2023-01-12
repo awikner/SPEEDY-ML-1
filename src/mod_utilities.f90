@@ -395,8 +395,6 @@ module mod_utilities
     real(kind=dp), allocatable :: full_sst(:,:,:)
 
     integer :: predictvars2d
-    !Current feedback for this reservoir
-    real(kind=dp), allocatable :: feedback(:)
 
     !Linear Noise stuff
     real(kind=dp), allocatable :: grad_reg(:,:)
@@ -1456,7 +1454,7 @@ module mod_utilities
       return
     end function
 
-    function gaussian_noise_1d_function_precip(inputdata,noisemag,use_mean_input,mean_input,grid,model_parameters) result(noisy_data)
+    function gaussian_noise_1d_function_precip(inputdata,noisemag,use_mean_input,mean_input,use_mean_state,grid,model_parameters) result(noisy_data)
       !Adds gaussian noise to the input data and makes sure the noise to
       !precipitation is not done in log space
       real(kind=dp), intent(in)  :: inputdata(:), mean_input(:)
@@ -1472,7 +1470,7 @@ module mod_utilities
 
       allocate(gaussnoise(size(inputdata,1)))
       allocate(noisy_data(size(inputdata,1)))
-      allocate(noisy_scaling(size(inputdata,1)))
+      allocate(noise_scaling(size(inputdata,1)))
 
       call random_gaussian_gen_1d(gaussnoise,sigma,mean)
 

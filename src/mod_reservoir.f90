@@ -328,7 +328,6 @@ subroutine train_reservoir(reservoir,grid,model_parameters)
       else
         call reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,reservoir%trainingdata(:,i:model_parameters%traininglength:model_parameters%timestep),reservoir%imperfect_model_states(:,i:model_parameters%traininglength:model_parameters%timestep))
       endif 
-      endif
       if(reservoir%gradregmag > 0.0_dp) then
           deallocate(reservoir%grad_reg_comps%grad_reg_comps_sparse)
           if(reservoir%noise_steps > reservoir%grad_reg_num_sparse) deallocate(reservoir%grad_reg_comps%grad_reg_comps_dense)
@@ -1006,99 +1005,6 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
    type(grid_type) , intent(in)            :: grid
 
    real(kind=dp), intent(in) :: trainingdata(:,:)
-<<<<<<< HEAD
-
-   integer :: i,info
-   integer :: training_length, batch_number
-
-   real(kind=dp), allocatable :: temp(:), x(:), x_(:), y(:)
-   real(kind=dp), parameter   :: alpha=1.0,beta=0.0
-   real(kind=dp), allocatable :: gaussian_noise
-
-   allocate(temp(reservoir%n),x(reservoir%n),x_(reservoir%n),y(reservoir%n))
-
-   x = 0
-   y = 0
-   do i=1, model_parameters%discardlength/model_parameters%timestep
-      info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,x,beta,y)
-      if(model_parameters%precip_bool) then
-        temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),reservoir%noisemag,grid,model_parameters))
-      else
-        temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,i),reservoir%noisemag))
-      endif 
-
-      x_ = tanh(y+temp)
-
-      x = (1_dp-reservoir%leakage)*x + reservoir%leakage*x_
-
-      y = 0
-   enddo
-
-   !call initialize_chunk_training()
-
-   reservoir%states(:,1) = x
-   batch_number = 0
-
-   training_length = size(trainingdata,2) - model_parameters%discardlength/model_parameters%timestep
-
-   do i=1, training_length-1
-      if(mod(i+1,reservoir%batch_size).eq.0) then
-        print *,'chunking',i, 'region',reservoir%assigned_region
-        batch_number = batch_number + 1
-
-        info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,mod(i,reservoir%batch_size)),beta,y)
-
-        if(model_parameters%precip_bool) then
-          temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,grid,model_parameters))
-          !if(reservoir%assigned_region == 956) 
-        else
-          temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag))
-        endif
-
-        x_ = tanh(y+temp)
-        x = (1-reservoir%leakage)*x + reservoir%leakage*x_
-
-        reservoir%states(:,reservoir%batch_size) = x
-
-        reservoir%saved_state = reservoir%states(:,reservoir%batch_size)
-
-        reservoir%states(2:reservoir%n:2,:) = reservoir%states(2:reservoir%n:2,:)**2
-
-        call chunking_matmul_ml(reservoir,model_parameters,grid,batch_number,trainingdata)
-
-      elseif (mod(i,reservoir%batch_size).eq.0) then
-        print *,'new state',i, 'region',reservoir%assigned_region
-
-        info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,reservoir%batch_size),beta,y)
-
-        if(model_parameters%precip_bool) then
-          temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,grid,model_parameters))
-        else
-          temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag))
-        endif
-
-        x_ = tanh(y+temp)
-        x = (1-reservoir%leakage)*x + reservoir%leakage*x_
-
-        reservoir%states(:,1) = x
-      else
-        info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,mod(i,reservoir%batch_size)),beta,y)
-
-        if(model_parameters%precip_bool) then
-          temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,grid,model_parameters))
-        else
-          temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag))
-        endif
-
-        x_ = tanh(y+temp)
-        x = (1-reservoir%leakage)*x + reservoir%leakage*x_
-
-        reservoir%states(:,mod(i+1,reservoir%batch_size)) = x
-      endif
-
-      y = 0
-   enddo
-=======
    type(sparse_matrix_type) :: win_sparse_matrix, A_sparse_matrix_csr
 
    integer :: i,k,info
@@ -1282,125 +1188,20 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
    print *, 'chunking finished for region',reservoir%assigned_region
    if(reservoir%assigned_region == 0) CALL CPU_TIME(t2)
    if(reservoir%assigned_region == 0) WRITE(*,*) "Reservoir layer cpu time     : ",(t2-t1)
->>>>>>> alexs_code
 
    return
 end subroutine
 
 subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,trainingdata,imperfect_model)
    use mpires
-<<<<<<< HEAD
    use mod_utilities, only : gaussian_noise_1d_function,gaussian_noise_1d_function_precip
    use mod_io, only : write_netcdf_2d_non_met_data_timeseries
-
-=======
-   use mod_utilities, only : gaussian_noise_1d_function, gaussian_noise_1d_function_precip
    use mod_linalg, only: mklsparse_matrix
->>>>>>> alexs_code
 
    type(reservoir_type), intent(inout)      :: reservoir
    type(model_parameters_type) , intent(in) :: model_parameters
    type(grid_type) , intent(in)            :: grid
 
-<<<<<<< HEAD
-   real(kind=dp), intent(in) :: trainingdata(:,:)
-   real(kind=dp), intent(in) :: imperfect_model(:,:)
-
-   integer :: i,info
-   integer :: training_length, batch_number
-
-   real(kind=dp), allocatable :: temp(:), x(:), x_(:), y(:), temp2(:)
-   real(kind=dp), parameter   :: alpha=1.0,beta=0.0
-   real(kind=dp), allocatable :: gaussian_noise
-
-   allocate(temp(reservoir%n),x(reservoir%n),x_(reservoir%n),y(reservoir%n))
-
-   if(reservoir%assigned_region == 1094) allocate(temp2(reservoir%reservoir_numinputs))
-
-   x = 0
-   y = 0
-   do i=1, model_parameters%discardlength/model_parameters%timestep
-      info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,x,beta,y)
-
-      if(model_parameters%precip_bool) then
-        temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),reservoir%noisemag,grid,model_parameters))
-      else
-        temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,i),reservoir%noisemag))
-      endif
-
-      x_ = tanh(y+temp)
-      x = (1_dp-reservoir%leakage)*x + reservoir%leakage*x_
-
-      y = 0
-   enddo
-
-   !call initialize_chunk_training()
- 
-   reservoir%states(:,1) = x
-   batch_number = 0
-
-   training_length = size(trainingdata,2) - model_parameters%discardlength/model_parameters%timestep
-
-   do i=1, training_length-1
-      if(mod(i+1,reservoir%batch_size).eq.0) then
-        print *,'chunking',i, 'region',reservoir%assigned_region
-        batch_number = batch_number + 1
-
-        info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,mod(i,reservoir%batch_size)),beta,y)
-
-        if(model_parameters%precip_bool) then
-          temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,grid,model_parameters))
-        else
-          temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag))
-        endif
-
-        x_ = tanh(y+temp)
-        x = (1-reservoir%leakage)*x + reservoir%leakage*x_
-
-        reservoir%states(:,reservoir%batch_size) = x
-
-        reservoir%saved_state = reservoir%states(:,reservoir%batch_size)
-
-        reservoir%states(2:reservoir%n:2,:) = reservoir%states(2:reservoir%n:2,:)**2
-
-        call chunking_matmul(reservoir,model_parameters,grid,batch_number,trainingdata,imperfect_model)
-
-      elseif (mod(i,reservoir%batch_size).eq.0) then
-        print *,'new state',i, 'region',reservoir%assigned_region
-
-        info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%saved_state,beta,y) !reservoir%states(:,reservoir%batch_size),beta,y)
-
-        if(model_parameters%precip_bool) then
-          temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,grid,model_parameters))
-        else
-          temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag))
-        endif
- 
-        x_ = tanh(y+temp)
-        x = (1-reservoir%leakage)*x + reservoir%leakage*x_
-
-        reservoir%states(:,1) = x
-      else 
-        info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,mod(i,reservoir%batch_size)),beta,y)
-
-        if(model_parameters%precip_bool) then
-          temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,grid,model_parameters))
-        else
-          temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag))
-        endif
-   
-        x_ = tanh(y+temp)
-        x = (1-reservoir%leakage)*x + reservoir%leakage*x_
-
-        reservoir%states(:,mod(i+1,reservoir%batch_size)) = x
-      endif 
-      if(reservoir%assigned_region == 1094) temp2 = gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag)
-      if(reservoir%assigned_region == 1094) call write_netcdf_2d_non_met_data_timeseries(temp2,'input','inputvec_noisy.nc',i,'unitless','x','t')
-      if(reservoir%assigned_region == 1094) call write_netcdf_2d_non_met_data_timeseries(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),'input','inputvec.nc',i,'unitless','x','t')
-      y = 0
-   enddo
-   
-=======
    real(kind=dp), intent(in) :: trainingdata(:,:), imperfect_model(:,:)
    type(sparse_matrix_type) :: win_sparse_matrix, A_sparse_matrix_csr
 
@@ -1577,7 +1378,6 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
           reservoir%reservoir_derivative(:,mod(i+1,reservoir%batch_size)) = 1.0/(cosh(x__)**2)
           reservoir%states(:,mod(i+1,reservoir%batch_size),k)=(1-reservoir%leakage)*reservoir%states(:,mod(i,reservoir%batch_size),k)+reservoir%leakage*x_
         endif
-
         y = 0
       enddo
    enddo
@@ -1585,7 +1385,6 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
    if(reservoir%assigned_region == 0) CALL CPU_TIME(t2)
    if(reservoir%assigned_region == 0) WRITE(*,*) "Reservoir layer cpu time     : ",(t2-t1)
 
->>>>>>> alexs_code
    return
 end subroutine
 
@@ -1612,26 +1411,13 @@ subroutine fit_chunk_ml(reservoir,model_parameters,grid)
     real(kind=dp), parameter    :: alpha=1.0, beta=0.0
 
     character(len=2) :: level_char
-<<<<<<< HEAD
 
     !Do regularization
-=======
-    character(len=:), allocatable :: file_path
-
-    file_path = '/scratch/user/awikner/Res_Matrices/'
-
-    write(level_char,'(i0.2)') grid%level_index
-
-    !Do regularization
-    if(reservoir%assigned_region == 954) call write_netcdf_2d_non_met_data(reservoir%states_x_states_aug,'info_mat',file_path//'region_954_level_'//level_char//'info_mat_'//trim(model_parameters%trial_name)//'.nc','unitless')
->>>>>>> alexs_code
 
     do i=1, reservoir%n
          reservoir%states_x_states_aug(i,i) = reservoir%states_x_states_aug(i,i) + reservoir%beta_res
     enddo
 
-<<<<<<< HEAD
-=======
     if(reservoir%gradregmag > 0.0) then
       reservoir%states_x_states_aug = reservoir%states_x_states_aug + reservoir%grad_reg_batch_mult*(reservoir%gradregmag**2.0_dp)*reservoir%grad_reg
     end if
@@ -1639,7 +1425,6 @@ subroutine fit_chunk_ml(reservoir,model_parameters,grid)
         reservoir%states_x_states_aug = reservoir%states_x_states_aug+reservoir%approx_grad_reg/reservoir%noise_realizations
     endif
 
->>>>>>> alexs_code
     !NOTE moving to mldivide not using pinv anymore
     print *, 'trying mldivide'
     allocate(a_trans(size(reservoir%states_x_states_aug,2),size(reservoir%states_x_states_aug,1)))
@@ -1647,11 +1432,6 @@ subroutine fit_chunk_ml(reservoir,model_parameters,grid)
     a_trans = transpose(reservoir%states_x_states_aug)
     b_trans = transpose(reservoir%states_x_trainingdata_aug)
 
-<<<<<<< HEAD
-=======
-    
-
->>>>>>> alexs_code
     if(reservoir%assigned_region == 954)  print *, 'a_trans(1:20,1:20)',a_trans(1:20,1:20)
     if(reservoir%assigned_region == 954)  print *, 'b_trans(1:20,1:20)',b_trans(1:20,1:20)
 
@@ -1663,39 +1443,24 @@ subroutine fit_chunk_ml(reservoir,model_parameters,grid)
     deallocate(a_trans)
     deallocate(b_trans)
 
-<<<<<<< HEAD
     write(level_char,'(i0.2)') grid%level_index
     if(reservoir%assigned_region == 954) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_954_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
     if(reservoir%assigned_region == 217) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_217_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
     if(reservoir%assigned_region == 218) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_218_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
 
-    !call write_trained_res(reservoir,model_parameters,grid)
-=======
-    if(reservoir%assigned_region == 954) call write_netcdf_2d_non_met_data(reservoir%wout,'wout',file_path//'region_954_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
-    if(reservoir%assigned_region == 217) call write_netcdf_2d_non_met_data(reservoir%wout,'wout',file_path//'region_217_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
-    if(reservoir%assigned_region == 218) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_218_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
-
-    if((reservoir%assigned_region == 954).and.(.not.(reservoir%use_mean))) call write_netcdf_2d_non_met_data(reservoir%approx_grad_reg,'approx_grad_reg',file_path//'region_954_level_'//level_char//'approx_grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless')
-    if((reservoir%assigned_region == 954).and.(reservoir%gradregmag > 0.)) call write_netcdf_2d_non_met_data(reservoir%grad_reg,'grad_reg',file_path//'region_954_level_'//level_char//'grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    if((reservoir%assigned_region == 954).and.(.not.(reservoir%use_mean))) call write_netcdf_2d_non_met_data(reservoir%approx_grad_reg,'approx_grad_reg','region_954_level_'//level_char//'approx_grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    if((reservoir%assigned_region == 954).and.(reservoir%gradregmag > 0.)) call write_netcdf_2d_non_met_data(reservoir%grad_reg,'grad_reg','region_954_level_'//level_char//'grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless')
 
     call write_trained_res(reservoir,model_parameters,grid)
->>>>>>> alexs_code
 
     print *, 'finish fit'
 end subroutine
 
 subroutine fit_chunk_hybrid(reservoir,model_parameters,grid)
-<<<<<<< HEAD
     !This solves for Wout using least squared solver 
     !This should be called only if you are chunking the training 
     !There is an option to train using a Prior
     !The prior would try to force the weights of Wout 
-=======
-    !This solves for Wout using least squared solver
-    !This should be called only if you are chunking the training
-    !There is an option to train using a Prior
-    !The prior would try to force the weights of Wout
->>>>>>> alexs_code
     !for the numerical model to be near reservoir%prior_val
 
     use mod_linalg, only : pinv_svd, mldivide
@@ -1712,28 +1477,16 @@ subroutine fit_chunk_hybrid(reservoir,model_parameters,grid)
     real(kind=dp), allocatable  :: prior(:,:), temp_beta(:,:)
 
     real(kind=dp), parameter    :: alpha=1.0, beta=0.0
-<<<<<<< HEAD
-  
     character(len=2) :: level_char
 
    
-=======
-
-    character(len=2) :: level_char
-    character(len=:), allocatable :: file_path
-
-    file_path = '/scratch/user/awikner/Res_Matrices/'
     write(level_char,'(i0.2)') grid%level_index
 
-    if(reservoir%assigned_region == 954) call write_netcdf_2d_non_met_data(reservoir%states_x_states_aug,'info_mat',file_path//'region_954_level_'//level_char//'info_mat_'//trim(model_parameters%trial_name)//'.nc','unitless')
-
->>>>>>> alexs_code
     !If we have a prior we need to make the prior matrix
     if(model_parameters%using_prior) then
       allocate(prior(size(reservoir%states_x_trainingdata_aug,1),size(reservoir%states_x_trainingdata_aug,2)))
 
       prior = 0.0_dp
-<<<<<<< HEAD
        
       do i=1, reservoir%chunk_size_speedy!reservoir%chunk_size_prediction
             prior(i,i) =  reservoir%prior_val*reservoir%beta_model**2.0_dp
@@ -1745,19 +1498,6 @@ subroutine fit_chunk_hybrid(reservoir,model_parameters,grid)
 
     !If we are doing a prior we need beta^2 
     if(model_parameters%using_prior) then 
-=======
-
-      do i=1, reservoir%chunk_size_speedy!reservoir%chunk_size_prediction
-            prior(i,i) =  reservoir%prior_val*reservoir%beta_model**2.0_dp
-      enddo
-
-    endif
-
-    !Do regularization
-
-    !If we are doing a prior we need beta^2
-    if(model_parameters%using_prior) then
->>>>>>> alexs_code
       do i=1, reservoir%n+reservoir%chunk_size_speedy!prediction
          if(i <= reservoir%chunk_size_speedy) then!_prediction) then
             reservoir%states_x_states_aug(i,i) = reservoir%states_x_states_aug(i,i) + reservoir%beta_model**2.0_dp
@@ -1766,7 +1506,6 @@ subroutine fit_chunk_hybrid(reservoir,model_parameters,grid)
          endif
       enddo
     else
-<<<<<<< HEAD
       do i=1, reservoir%n+reservoir%chunk_size_speedy!prediction
          if(i <= reservoir%chunk_size_speedy) then!prediction) then 
             reservoir%states_x_states_aug(i,i) = reservoir%states_x_states_aug(i,i) + reservoir%beta_model
@@ -1775,15 +1514,6 @@ subroutine fit_chunk_hybrid(reservoir,model_parameters,grid)
          endif 
       enddo
     endif 
-=======
-      do i=1, reservoir%n+reservoir%chunk_size_prediction
-         if(i <= reservoir%chunk_size_prediction) then
-            reservoir%states_x_states_aug(i,i) = reservoir%states_x_states_aug(i,i) + reservoir%beta_model
-         else
-            reservoir%states_x_states_aug(i,i) = reservoir%states_x_states_aug(i,i) + reservoir%beta_res
-         endif
-      enddo
-    endif
 
     if(reservoir%gradregmag > 0.0) then
       reservoir%states_x_states_aug = reservoir%states_x_states_aug + reservoir%grad_reg_batch_mult*(reservoir%gradregmag**2.0_dp)*reservoir%grad_reg
@@ -1791,7 +1521,6 @@ subroutine fit_chunk_hybrid(reservoir,model_parameters,grid)
     if(.not.reservoir%use_mean) then
         reservoir%states_x_states_aug = reservoir%states_x_states_aug+reservoir%approx_grad_reg/reservoir%noise_realizations
     endif
->>>>>>> alexs_code
 
     !NOTE moving to mldivide not using pinv anymore
     print *, 'trying mldivide'
@@ -1806,19 +1535,11 @@ subroutine fit_chunk_hybrid(reservoir,model_parameters,grid)
     !if(any(IEEE_IS_NAN(reservoir%states_x_trainingdata_aug))) print *, 'reservoir%states_x_states_aug nan', reservoir%assigned_region
     !if(any(IEEE_IS_NAN(a_trans))) print *, 'a_trans has nan',reservoir%assigned_region
     !if(any(IEEE_IS_NAN(b_trans))) print *, 'b_trans has nan',reservoir%assigned_region
-<<<<<<< HEAD
     
     !If we are trying a prior then we need to add it to b_trans
     if(model_parameters%using_prior) then
       b_trans = b_trans + transpose(prior)
     endif  
-=======
-
-    !If we are trying a prior then we need to add it to b_trans
-    if(model_parameters%using_prior) then
-      b_trans = b_trans + transpose(prior)
-    endif
->>>>>>> alexs_code
 
     call mldivide(a_trans,b_trans)
     reservoir%wout = transpose(b_trans)
@@ -1832,30 +1553,20 @@ subroutine fit_chunk_hybrid(reservoir,model_parameters,grid)
     deallocate(a_trans)
     deallocate(b_trans)
 
-<<<<<<< HEAD
-    write(level_char,'(i0.2)') grid%level_index
-    !if(reservoir%assigned_region == 954) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_954_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
-    !if(reservoir%assigned_region == 217) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_217_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
-    !if(reservoir%assigned_region == 218) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_218_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
-
-    if(write_training_weights) then 
-       call write_trained_res(reservoir,model_parameters,grid)
-    endif 
-
-    print *, 'finish fit'
-end subroutine 
-=======
-    if(reservoir%assigned_region == 954) call write_netcdf_2d_non_met_data(reservoir%wout,'wout',file_path//'region_954_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
-    if(reservoir%assigned_region == 217) call write_netcdf_2d_non_met_data(reservoir%wout,'wout',file_path//'region_217_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
-    if(reservoir%assigned_region == 218) call write_netcdf_2d_non_met_data(reservoir%wout,'wout',file_path//'region_218_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    if(reservoir%assigned_region == 954) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_954_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    if(reservoir%assigned_region == 217) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_217_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    if(reservoir%assigned_region == 218) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_218_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
 
     call write_trained_res(reservoir,model_parameters,grid)
-    if((reservoir%assigned_region == 954).and.(.not.(reservoir%use_mean))) call write_netcdf_2d_non_met_data(reservoir%approx_grad_reg,'approx_grad_reg',file_path//'region_954_level_'//level_char//'approx_grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless')
-    if((reservoir%assigned_region == 954).and.(reservoir%gradregmag > 0.)) call write_netcdf_2d_non_met_data(reservoir%grad_reg,'grad_reg',file_path//'region_954_level_'//level_char//'grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    if((reservoir%assigned_region == 954).and.(.not.(reservoir%use_mean))) call write_netcdf_2d_non_met_data(reservoir%approx_grad_reg,'approx_grad_reg','region_954_level_'//level_char//'approx_grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    if((reservoir%assigned_region == 954).and.(reservoir%gradregmag > 0.)) call write_netcdf_2d_non_met_data(reservoir%grad_reg,'grad_reg','region_954_level_'//level_char//'grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    
+    if(write_training_weights) then
+       call write_trained_res(reservoir,model_parameters,grid)
+    endif
 
     print *, 'finish fit'
 end subroutine
->>>>>>> alexs_code
 
 subroutine predictcontroller(reservoir,model_parameters,grid,imperfect_model_in)
     type(reservoir_type), intent(inout)     :: reservoir
@@ -1869,7 +1580,6 @@ subroutine predictcontroller(reservoir,model_parameters,grid,imperfect_model_in)
     allocate(x(reservoir%n))
 
     x = reservoir%saved_state
-<<<<<<< HEAD
  
     call synchronize(reservoir,reservoir%predictiondata(:,1:model_parameters%synclength/model_parameters%timestep),x,model_parameters%synclength/model_parameters%timestep)
 
@@ -1879,17 +1589,6 @@ end subroutine
 subroutine synchronize(reservoir,input,x,length)
     type(reservoir_type), intent(inout) :: reservoir
     
-=======
-
-    call synchronize(reservoir,reservoir%predictiondata(:,1:model_parameters%synclength/model_parameters%timestep),x,model_parameters%synclength/model_parameters%timestep)
-
-    call predict(reservoir,model_parameters,grid,x,imperfect_model_in)
-end subroutine
-
-subroutine synchronize(reservoir,input,x,length)
-    type(reservoir_type), intent(inout) :: reservoir
-
->>>>>>> alexs_code
     real(kind=dp), intent(in)     :: input(:,:)
     real(kind=dp), intent(inout)  :: x(:)
 
@@ -1911,17 +1610,10 @@ subroutine synchronize(reservoir,input,x,length)
 
        x_ = tanh(y+temp)
        x = (1.0_dp-reservoir%leakage)*x + reservoir%leakage*x_
-<<<<<<< HEAD
     enddo 
     
     return 
 end subroutine  
-=======
-    enddo
-
-    return
-end subroutine
->>>>>>> alexs_code
 
 subroutine synchronize_print(reservoir,grid,input,x,length)
     type(reservoir_type), intent(inout) :: reservoir
@@ -1949,11 +1641,7 @@ subroutine synchronize_print(reservoir,grid,input,x,length)
        info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,x,beta,y)
        if(reservoir%assigned_region == 36)  print *, 'i',i
        temp = matmul(reservoir%win,input(:,i))
-<<<<<<< HEAD
  
-=======
-
->>>>>>> alexs_code
        x_ = tanh(y+temp)
        x = (1-reservoir%leakage)*x + reservoir%leakage*x_
 
@@ -1977,10 +1665,7 @@ subroutine predict(reservoir,model_parameters,grid,x,local_model_in)
     real(kind=dp), allocatable :: y(:), temp(:), x_(:)
     real(kind=dp), allocatable :: local_model_temp(:)
     real(kind=dp), allocatable :: x_temp(:),x_augment(:)
-<<<<<<< HEAD
     real(kind=dp), allocatable :: v_ml(:), v_p(:), v_h(:)
-=======
->>>>>>> alexs_code
 
     real(kind=dp), parameter :: alpha=1.0,beta=0.0
 
@@ -2005,7 +1690,6 @@ subroutine predict(reservoir,model_parameters,grid,x,local_model_in)
 
     reservoir%outvec = matmul(reservoir%wout,x_augment)
 
-<<<<<<< HEAD
     if(model_parameters%outvec_component_contribs) then
        reservoir%v_p = matmul(reservoir%wout(:,1:reservoir%chunk_size_speedy),reservoir%local_model)
        reservoir%v_ml = matmul(reservoir%wout(:,reservoir%chunk_size_speedy+1:reservoir%chunk_size_speedy+reservoir%n),x_temp)
@@ -2028,12 +1712,6 @@ subroutine predict(reservoir,model_parameters,grid,x,local_model_in)
 
     if((reservoir%assigned_region == 954).and.(mod(i,24) == 0)) then
       print *, '*******' 
-=======
-    call unstandardize_state_vec_res(reservoir,grid,reservoir%outvec)
-
-    if((reservoir%assigned_region == 954).and.(mod(i,24) == 0)) then
-      print *, '*******'
->>>>>>> alexs_code
       print *, 'feedback',reservoir%feedback
       print *, '*******'
       print *, 'local_model',reservoir%local_model
@@ -2108,21 +1786,13 @@ end subroutine
 
 subroutine clean_prediction(reservoir)
    type(reservoir_type), intent(inout) :: reservoir
-<<<<<<< HEAD
   
-=======
->>>>>>> alexs_code
    deallocate(reservoir%local_model)
    deallocate(reservoir%outvec)
    deallocate(reservoir%feedback)
 
-<<<<<<< HEAD
 end subroutine 
-  
-=======
-end subroutine
 
->>>>>>> alexs_code
 subroutine initialize_chunk_training(reservoir,model_parameters)
    use mod_utilities, only : find_closest_divisor
 
@@ -2138,10 +1808,8 @@ subroutine initialize_chunk_training(reservoir,model_parameters)
    !routine to get the closest reservoir%batch_size to num_of_batches that
    !divides into reservoir%traininglength
    call find_closest_divisor(approx_batch_size,(model_parameters%traininglength - model_parameters%discardlength)/model_parameters%timestep,reservoir%batch_size)
-<<<<<<< HEAD
    print *, 'num_of_batches,approx_batch_size,reservoir%traininglength,reservoir%batch_size',num_of_batches,approx_batch_size,model_parameters%traininglength-model_parameters%discardlength,reservoir%batch_size
-=======
-   reservoir%batch_size = approx_batch_size
+   !reservoir%batch_size = approx_batch_size
    if((reservoir%grad_reg_num_of_batches.ne.0).and.(reservoir%grad_reg_num_of_batches<=num_of_batches)) then
      reservoir%grad_reg_batch_mult=real(num_of_batches,8)/real(reservoir%grad_reg_num_of_batches,8)
    elseif (reservoir%grad_reg_num_of_batches>num_of_batches) then
@@ -2150,17 +1818,10 @@ subroutine initialize_chunk_training(reservoir,model_parameters)
    elseif (reservoir%grad_reg_num_of_batches.eq.0) then
      reservoir%grad_reg_batch_mult=real(num_of_batches,8)*real(reservoir%batch_size,8)
    endif
-   print *, 'num_of_batches,reservoir%traininglength,approx_batch_size,reservoir%batch_size,reservoir%grad_reg_batch_mult',num_of_batches,model_parameters%traininglength,approx_batch_size,reservoir%batch_size,reservoir%grad_reg_batch_mult
->>>>>>> alexs_code
 
    !Should be reservoir%n+ reservoir%chunk_size
    allocate(reservoir%states_x_trainingdata_aug(reservoir%chunk_size_prediction,reservoir%n+reservoir%chunk_size_speedy))!prediction))
    allocate(reservoir%states_x_states_aug(reservoir%n+reservoir%chunk_size_speedy,reservoir%n+reservoir%chunk_size_speedy))!prediction,reservoir%n+reservoir%chunk_size_prediction))
-<<<<<<< HEAD
-   allocate(reservoir%states(reservoir%n,reservoir%batch_size))
-   allocate(reservoir%augmented_states(reservoir%n+reservoir%chunk_size_speedy,reservoir%batch_size))!prediction,reservoir%batch_size))
-   allocate(reservoir%saved_state(reservoir%n))
-=======
    allocate(reservoir%reservoir_derivative(reservoir%n,reservoir%batch_size))
    allocate(reservoir%states(reservoir%n,reservoir%batch_size,reservoir%noise_realizations))
    if(.not.reservoir%use_mean) then
@@ -2177,16 +1838,12 @@ subroutine initialize_chunk_training(reservoir,model_parameters)
      allocate(reservoir%grad_reg(reservoir%n+reservoir%chunk_size_prediction,reservoir%n+reservoir%chunk_size_prediction))
      reservoir%grad_reg = 0.0_dp
    endif
->>>>>>> alexs_code
 
    reservoir%states_x_trainingdata_aug = 0.0_dp
    reservoir%states_x_states_aug = 0.0_dp
    reservoir%states = 0.0_dp
    reservoir%augmented_states = 0.0_dp
-<<<<<<< HEAD
-=======
    reservoir%reservoir_derivative = 0.0_dp
->>>>>>> alexs_code
 
 end subroutine
 
@@ -2203,56 +1860,21 @@ subroutine chunking_matmul_ml(reservoir,model_parameters,grid,batch_number,train
 
    real(kind=dp), intent(in)    :: trainingdata(:,:)
 
-<<<<<<< HEAD
-   real(kind=dp), allocatable   :: temp(:,:), targetdata(:,:)
-   real(kind=dp), parameter     :: alpha=1.0, beta=0.0
-
-   integer                      :: n, m, l
-=======
    real(kind=dp), allocatable   :: temp(:,:),temp2(:,:),targetdata(:,:),states_var(:,:)
    real(kind=dp), parameter     :: alpha=1.0, beta=0.0
 
    integer                      :: n, m, l, i
->>>>>>> alexs_code
 
    n = size(reservoir%augmented_states,1)
    m = size(reservoir%augmented_states,2)
 
-<<<<<<< HEAD
-   reservoir%augmented_states(reservoir%chunk_size_speedy+1:reservoir%n+reservoir%chunk_size_speedy,:) = reservoir%states
-
-=======
->>>>>>> alexs_code
    print *, 'grid%predict_end',grid%predict_end,model_parameters%discardlength/model_parameters%timestep+(batch_number-1)*m+1,batch_number*m+model_parameters%discardlength/model_parameters%timestep
 
    call tile_full_input_to_target_data(reservoir,grid,trainingdata(1:grid%predict_end,model_parameters%discardlength/model_parameters%timestep+(batch_number-1)*m+1:batch_number*m+model_parameters%discardlength/model_parameters%timestep),targetdata)
 
-<<<<<<< HEAD
+   !if(reservoir%assigned_region == 954)  print *, 'target data',targetdata(:,1)
    if(reservoir%assigned_region == 954)  print *, 'shape(trainingdata)',shape(trainingdata)
    if(reservoir%assigned_region == 954)  print *, 'shape(targetdata)',shape(targetdata)
-
-   allocate(temp(reservoir%chunk_size_prediction,n))
-   temp = 0.0_dp
-
-   temp = matmul(targetdata,transpose(reservoir%augmented_states))
-   !TODO make this matmul DGEMM
-
-   reservoir%states_x_trainingdata_aug = reservoir%states_x_trainingdata_aug + temp
-   deallocate(temp)
-   deallocate(targetdata)
-
-   allocate(temp(n,n))
-   call DGEMM('N','N',n,n,m,alpha,reservoir%augmented_states,n,transpose(reservoir%augmented_states),m,beta,temp,n)
-   !call
-   !DGEMM('N','T',n,n,m,alpha,reservoir%augmented_states,n,reservoir%augmented_states,m,beta,temp,n)
-   reservoir%states_x_states_aug = reservoir%states_x_states_aug + temp
-   deallocate(temp)
-
-   return
-end subroutine
-
-=======
-   if(reservoir%assigned_region == 954)  print *, 'target data',targetdata(:,1)
 
    allocate(temp(reservoir%chunk_size_prediction,n))
    allocate(temp2(n,n))
@@ -2845,7 +2467,6 @@ subroutine chunking_compute_grad_reg(reservoir,win_sparse_matrix,A_sparse_matrix
   if(reservoir%assigned_region == 0) WRITE(*,*) "Grad reg cpu_time for batch",batch_number,": ",(t2-t1)
 
 end subroutine
->>>>>>> alexs_code
 
 subroutine chunking_matmul(reservoir,model_parameters,grid,batch_number,trainingdata,imperfect_model)
    use mod_utilities, only : gaussian_noise
@@ -2861,17 +2482,10 @@ subroutine chunking_matmul(reservoir,model_parameters,grid,batch_number,training
    real(kind=dp), intent(in)    :: trainingdata(:,:)
    real(kind=dp), intent(in)    :: imperfect_model(:,:)
 
-<<<<<<< HEAD
-   real(kind=dp), allocatable   :: temp(:,:), targetdata(:,:)
-   real(kind=dp), parameter     :: alpha=1.0, beta=0.0
-
-   integer                      :: n, m, l
-=======
    real(kind=dp), allocatable   :: temp(:,:), temp2(:,:), targetdata(:,:), states_var(:,:)
    real(kind=dp), parameter     :: alpha=1.0, beta=0.0
 
    integer                      :: n, m, l, i
->>>>>>> alexs_code
 
    n = size(reservoir%augmented_states,1)
    m = size(reservoir%augmented_states,2)
@@ -2879,14 +2493,8 @@ subroutine chunking_matmul(reservoir,model_parameters,grid,batch_number,training
    !reservoir%augmented_states(1:reservoir%chunk_size_prediction,:) = imperfect_model(:,model_parameters%discardlength/model_parameters%timestep+(batch_number-1)*m+1:batch_number*m+model_parameters%discardlength/model_parameters%timestep)
    reservoir%augmented_states(1:reservoir%chunk_size_speedy,:) = imperfect_model(:,model_parameters%discardlength/model_parameters%timestep+(batch_number-1)*m+1:batch_number*m+model_parameters%discardlength/model_parameters%timestep)
    !if(any(IEEE_IS_NAN(imperfect_model))) print *, 'imperfect_model has nan',reservoir%assigned_region,batch_number
-<<<<<<< HEAD
-   
-   !reservoir%augmented_states(reservoir%chunk_size_prediction+1:reservoir%n+reservoir%chunk_size_prediction,:) = reservoir%states
-   reservoir%augmented_states(reservoir%chunk_size_speedy+1:reservoir%n+reservoir%chunk_size_speedy,:) = reservoir%states
-=======
 
    !reservoir%augmented_states(reservoir%chunk_size_prediction+1:reservoir%n+reservoir%chunk_size_prediction,:) = reservoir%states
->>>>>>> alexs_code
    !if(any(IEEE_IS_NAN(reservoir%states))) print *, 'reservoir%states has nan',reservoir%assigned_region,batch_number
 
    print *, 'grid%predict_end',grid%predict_end,model_parameters%discardlength/model_parameters%timestep+(batch_number-1)*m+1,batch_number*m+model_parameters%discardlength/model_parameters%timestep
@@ -2899,28 +2507,6 @@ subroutine chunking_matmul(reservoir,model_parameters,grid,batch_number,training
    if(reservoir%assigned_region == 954)  print *, 'shape(targetdata)',shape(targetdata)
 
    allocate(temp(reservoir%chunk_size_prediction,n))
-<<<<<<< HEAD
-   temp = 0.0_dp
-  
-   temp = matmul(targetdata,transpose(reservoir%augmented_states))
-   !TODO make this matmul DGEMM
-    
-   reservoir%states_x_trainingdata_aug = reservoir%states_x_trainingdata_aug + temp
-   deallocate(temp)
-   deallocate(targetdata)
- 
-   allocate(temp(n,n))
-   call DGEMM('N','N',n,n,m,alpha,reservoir%augmented_states,n,transpose(reservoir%augmented_states),m,beta,temp,n)
-   !call DGEMM('N','T',n,n,m,alpha,reservoir%augmented_states,n,reservoir%augmented_states,m,beta,temp,n)
-   reservoir%states_x_states_aug = reservoir%states_x_states_aug + temp
-   deallocate(temp)
-   
-   return 
-end subroutine  
-
-subroutine write_trained_res(reservoir,model_parameters,grid)
-  use mod_io, only : write_netcdf_2d_non_met_data, write_netcdf_1d_non_met_data_int, write_netcdf_1d_non_met_data_real, write_netcdf_1d_non_met_data_real_shared_dim
-=======
    allocate(temp2(n,n))
    if(reservoir%use_mean) then
       if(reservoir%assigned_region == 954)  print *, 'computing mean reservoir for batch ', batch_number
@@ -2966,9 +2552,8 @@ subroutine write_trained_res(reservoir,model_parameters,grid)
    return
 end subroutine
 
-subroutine write_trained_res_old(reservoir,model_parameters,grid)
-  use mod_io, only : write_netcdf_2d_non_met_data, write_netcdf_1d_non_met_data_int, write_netcdf_1d_non_met_data_real
->>>>>>> alexs_code
+subroutine write_trained_res(reservoir,model_parameters,grid)
+  use mod_io, only : write_netcdf_2d_non_met_data, write_netcdf_1d_non_met_data_int, write_netcdf_1d_non_met_data_real, write_netcdf_1d_non_met_data_real_shared_dim
 
   type(reservoir_type), intent(in) :: reservoir
   type(model_parameters_type), intent(in) :: model_parameters
@@ -2977,11 +2562,9 @@ subroutine write_trained_res_old(reservoir,model_parameters,grid)
   character(len=:), allocatable :: file_path
   character(len=4) :: worker_char
   character(len=1) :: height_char
-<<<<<<< HEAD
   character(len=2) :: ens_member
 
   integer :: i 
-=======
 
   file_path = '/scratch/user/awikner/ML_SPEEDY_WEIGHTS/'
 
@@ -2989,42 +2572,6 @@ subroutine write_trained_res_old(reservoir,model_parameters,grid)
   write(height_char,'(i0.1)') grid%level_index
 
   if((reservoir%assigned_region == 0).and.(grid%level_index == 1)) then
-    call write_controller_file(model_parameters)
-  endif
-
-  call write_netcdf_2d_non_met_data(reservoir%win,'win',file_path//'worker_'//worker_char//'_level_'//height_char//'_win_'//trim(model_parameters%trial_name)//'.nc','unitless')
-  call write_netcdf_2d_non_met_data(reservoir%wout,'wout',file_path//'worker_'//worker_char//'_level_'//height_char//'_wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
-
-  call write_netcdf_1d_non_met_data_int(reservoir%rows,'rows',file_path//'worker_'//worker_char//'_level_'//height_char//'_rows_'//trim(model_parameters%trial_name)//'.nc','unitless')
-  call write_netcdf_1d_non_met_data_int(reservoir%cols,'cols',file_path//'worker_'//worker_char//'_level_'//height_char//'_cols_'//trim(model_parameters%trial_name)//'.nc','unitless')
-
-  call write_netcdf_1d_non_met_data_real(reservoir%vals,'vals',file_path//'worker_'//worker_char//'_level_'//height_char//'_vals_'//trim(model_parameters%trial_name)//'.nc','unitless')
-
-  call write_netcdf_1d_non_met_data_real(grid%mean,'mean',file_path//'worker_'//worker_char//'_level_'//height_char//'_mean_'//trim(model_parameters%trial_name)//'.nc','unitless')
-  call write_netcdf_1d_non_met_data_real(grid%std,'std',file_path//'worker_'//worker_char//'_level_'//height_char//'_std_'//trim(model_parameters%trial_name)//'.nc','unitless')
-
-end subroutine
-
-subroutine write_trained_res(reservoir,model_parameters,grid)
-  use mod_io, only : write_netcdf_2d_non_met_data_new, write_netcdf_1d_non_met_data_int_new, write_netcdf_1d_non_met_data_real_new, &
-                     write_netcdf_2d_non_met_data_new_double, write_netcdf_1d_non_met_data_real_new_double
-
-  type(reservoir_type), intent(in) :: reservoir
-  type(model_parameters_type), intent(in) :: model_parameters
-  type(grid_type), intent(in)             :: grid
-
-  character(len=:), allocatable :: file_path
-  character(len=4) :: worker_char
-  character(len=1) :: height_char
->>>>>>> alexs_code
-
-  file_path = '/scratch/user/awikner/ML_SPEEDY_WEIGHTS/'
-
-  write(worker_char,'(i0.4)') reservoir%assigned_region
-  write(height_char,'(i0.1)') grid%level_index
-
-  if((reservoir%assigned_region == 0).and.(grid%level_index == 1)) then
-<<<<<<< HEAD
     call write_controller_file(model_parameters,reservoir) 
   endif 
 
@@ -3045,41 +2592,15 @@ end subroutine
 subroutine write_controller_file(model_parameters,reservoir)
    type(model_parameters_type), intent(in) :: model_parameters
    type(reservoir_type), intent(in)        :: reservoir
-=======
-    call write_controller_file(model_parameters)
-  endif
-
-  print *, 'write_trained_res',reservoir%assigned_region
-  call write_netcdf_2d_non_met_data_new_double(reservoir%win,'win',file_path//'worker_'//worker_char//'_level_'//height_char//'_'//trim(model_parameters%trial_name)//'.nc','unitless','win_x','win_y')
-  call write_netcdf_2d_non_met_data_new_double(reservoir%wout,'wout',file_path//'worker_'//worker_char//'_level_'//height_char//'_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
-
-  call write_netcdf_1d_non_met_data_int_new(reservoir%rows,'rows',file_path//'worker_'//worker_char//'_level_'//height_char//'_'//trim(model_parameters%trial_name)//'.nc','unitless','rows_x')
-  call write_netcdf_1d_non_met_data_int_new(reservoir%cols,'cols',file_path//'worker_'//worker_char//'_level_'//height_char//'_'//trim(model_parameters%trial_name)//'.nc','unitless','cols_x')
-
-  call write_netcdf_1d_non_met_data_real_new_double(reservoir%vals,'vals',file_path//'worker_'//worker_char//'_level_'//height_char//'_'//trim(model_parameters%trial_name)//'.nc','unitless','vals_x')
-
-  call write_netcdf_1d_non_met_data_real_new_double(grid%mean,'mean',file_path//'worker_'//worker_char//'_level_'//height_char//'_'//trim(model_parameters%trial_name)//'.nc','unitless','mean_x')
-  call write_netcdf_1d_non_met_data_real_new_double(grid%std,'std',file_path//'worker_'//worker_char//'_level_'//height_char//'_'//trim(model_parameters%trial_name)//'.nc','unitless','std_x')
-
-end subroutine
-
-subroutine write_controller_file(model_parameters)
-   type(model_parameters_type), intent(in) :: model_parameters
->>>>>>> alexs_code
 
    character(len=:), allocatable :: file_path
 
    file_path = '/scratch/user/awikner/ML_SPEEDY_WEIGHTS/'//trim(model_parameters%trial_name)//'_controller_file.txt'
-<<<<<<< HEAD
  
-=======
-
->>>>>>> alexs_code
    open (10, file=file_path, status='unknown')
 
    ! write to file
    write(10,*)"-----------------------------------------------------------"
-<<<<<<< HEAD
    write(10,*) "num_hor_regions:",model_parameters%number_of_regions
    write(10,*)"ml_only:",model_parameters%ml_only
    write(10,*)"num_vert_levels:",model_parameters%num_vert_levels
@@ -3113,19 +2634,6 @@ end subroutine
 
 subroutine trained_reservoir_prediction(reservoir,model_parameters,grid)
   use mod_linalg, only : mklsparse 
-=======
-   write(10,*)
-   write(10,*)"num_vert_levels:",model_parameters%num_vert_levels
-   write(10,*)"-----------------------------------------------------------"
-
-   ! close file
-   close(10)
-
-end subroutine
-
-subroutine trained_reservoir_prediction(reservoir,model_parameters,grid)
-  use mod_linalg, only : mklsparse
->>>>>>> alexs_code
   use mod_io, only : read_trained_res
 
   type(reservoir_type), intent(inout)     :: reservoir
@@ -3155,11 +2663,7 @@ subroutine trained_reservoir_prediction(reservoir,model_parameters,grid)
     reservoir%precip_input_bool = .False.
     reservoir%precip_bool = .False.
   endif
-<<<<<<< HEAD
  
-=======
-
->>>>>>> alexs_code
   reservoir%local_predictvars = model_parameters%full_predictvars
   reservoir%local_heightlevels_input = grid%inputzchunk
 
@@ -3190,27 +2694,15 @@ subroutine trained_reservoir_prediction(reservoir,model_parameters,grid)
     print *, 'grid%std(grid%sst_mean_std_idx)',grid%std(grid%sst_mean_std_idx)
     if(grid%std(grid%sst_mean_std_idx) > 0.2) then
       reservoir%sst_bool_input = .True.
-<<<<<<< HEAD
     else    
       reservoir%sst_bool_input = .False.  
     endif 
-=======
-    else
-      reservoir%sst_bool_input = .False.
-    endif
-  else
-    reservoir%sst_bool_input = .False.
->>>>>>> alexs_code
   endif
 
   call allocate_res_new(reservoir,grid,model_parameters)
 
   call mklsparse(reservoir)
-<<<<<<< HEAD
    
-=======
-
->>>>>>> alexs_code
   grid%logp_start = 0
   grid%logp_end = 0
   grid%sst_start = 0
@@ -3244,9 +2736,5 @@ subroutine trained_reservoir_prediction(reservoir,model_parameters,grid)
      grid%tisr_end = grid%tisr_start + reservoir%tisr_size_input - 1
    endif
 end subroutine
-<<<<<<< HEAD
 
 end module 
-=======
-end module
->>>>>>> alexs_code
