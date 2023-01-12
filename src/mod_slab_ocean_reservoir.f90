@@ -34,12 +34,21 @@ subroutine initialize_slab_ocean_model(reservoir,grid,model_parameters)
   reservoir%sigma = 0.6_dp !0.5_dp
 
   reservoir%prior_val = 0.0_dp
+  reservoir%gradregmag = 0.0_dp
+  reservoir%noise_steps = 2 !Must be > 1
+  reservoir%grad_reg_num_sparse = 2 !DON'T CHANGE
+  reservoir%grad_reg_num_of_batches = 2
+  reservoir%noise_realizations = 1
+  reservoir%use_mean = .True.
+  reservoir%use_mean_input = .False.
+  reservoir%use_mean_state = .False.
 
   reservoir%density = reservoir%deg/reservoir%m
 
   reservoir%noisemag = 0.10
 
   reservoir%leakage = 1.0_dp!/14.0_dp !/4.0_dp !12.0_dp
+  reservoir%use_leakage = (reservoir%leakage.ne.1.0_dp)
 
   !call set_reservoir_by_region(reservoir,grid)
 
@@ -183,7 +192,7 @@ subroutine train_slab_ocean_model(reservoir,grid,model_parameters)
    integer :: betas_res, betas_model,priors
    integer :: vert_loop
     
-   real(kind=dp), allocatable :: ip(:),rand(:),average
+   real(kind=dp), allocatable :: ip(:),rand(:),average,mean_input(:,:),leakage_diag(:)
    real(kind=dp), allocatable :: targetdata_1d(:)
    real(kind=dp), allocatable :: targetdata_2d(:,:)
 
@@ -216,6 +225,10 @@ subroutine train_slab_ocean_model(reservoir,grid,model_parameters)
    print *,'starting reservoir_layer'   
   
    call initialize_chunk_training(reservoir,model_parameters) 
+
+   if(reservoir%use_mean_input) then
+     reservoir%mean_input = sqrt(sum(reservoir%trainingdata**2,2)/size(reservoir%trainingdata,2))
+   endif
  
    if(.not. model_parameters%ml_only_ocean) then 
      allocate(reservoir%imperfect_model_states(reservoir%chunk_size_prediction,size(reservoir%trainingdata,2)))
@@ -240,11 +253,30 @@ subroutine train_slab_ocean_model(reservoir,grid,model_parameters)
       if(reservoir%assigned_region == 690) print *, 'shape(reservoir%trainingdata(:,i:model_parameters%traininglength:model_parameters%timestep_slab))',shape(reservoir%trainingdata(:,i:model_parameters%traininglength:model_parameters%timestep_slab))
 
       if(reservoir%assigned_region == 690) print *, 'reservoir%trainingdata(grid_atmo%sst_start,i:model_parameters%traininglength:model_parameters%timestep_slab)',reservoir%trainingdata(grid%sst_start,i:model_parameters%traininglength:model_parameters%timestep_slab)
-
+      if(reservoir%gradregmag > 0.0_dp) then
+          if((i.eq.1).and.(reservoir%use_leakage)) then
+            allocate(leakage_diag(reservoir%n))
+            leakage_diag = 1.0 - reservoir%leakage
+            call mklsparse_diag(leakage_diag,reservoir%leakage_mat)
+            deallocate(leakage_diag)
+          endif
+          allocate(reservoir%grad_reg_comps%grad_reg_comps_sparse(reservoir%grad_reg_num_sparse))
+          do j=1,reservoir%grad_reg_num_sparse
+            reservoir%grad_reg_comps%grad_reg_comps_sparse%descr%TYPE=SPARSE_MATRIX_TYPE_GENERAL
+          end do
+          if(reservoir%noise_steps > reservoir%grad_reg_num_sparse) then
+            allocate(reservoir%grad_reg_comps%grad_reg_comps_dense(reservoir%n,reservoir%reservoir_numinputs,reservoir%noise_steps-reservoir%grad_reg_num_sparse))
+            reservoir%grad_reg_comps%grad_reg_comps_dense = 0.0_dp
+          endif
+      endif
       if(model_parameters%ml_only_ocean) then 
         call reservoir_layer_chunking_ml(reservoir,model_parameters,grid,reservoir%trainingdata(:,i:model_parameters%traininglength:model_parameters%timestep_slab))
       else
         call reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,reservoir%trainingdata(:,i:model_parameters%traininglength:model_parameters%timestep_slab),reservoir%imperfect_model_states(:,i:model_parameters%traininglength:model_parameters%timestep_slab))
+      endif
+      if(reservoir%gradregmag > 0.0_dp) then
+          deallocate(reservoir%grad_reg_comps%grad_reg_comps_sparse)
+          if(reservoir%noise_steps > reservoir%grad_reg_num_sparse) deallocate(reservoir%grad_reg_comps%grad_reg_comps_dense)
       endif
 
    enddo

@@ -107,8 +107,6 @@ subroutine allocate_res_new(reservoir,grid,model_parameters)
   reservoir%leakage = 1.0_dp!/3.0_dp!1.0!1.0_dp/12.0_dp!6.0_dp
   reservoir%use_leakage = (reservoir%leakage.ne.1.0_dp)
 
-  reservoir%prior_val = 0.0_dp
-
   reservoir%density = reservoir%deg/real(reservoir%m,kind=dp)
 
   call set_reservoir_by_region(reservoir,grid)
@@ -1023,7 +1021,7 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
       do i=1, model_parameters%discardlength/model_parameters%timestep
          info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,x,beta,y)
          if(model_parameters%precip_bool) then
-           temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),reservoir%noisemag,grid,model_parameters))
+           temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
          else
            temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
          endif
@@ -1045,7 +1043,7 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
       do i=1, model_parameters%discardlength/model_parameters%timestep
          info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,x,beta,y)
          if(model_parameters%precip_bool) then
-           temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),beta,grid,model_parameters))
+           temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
          else
            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
          endif
@@ -1075,9 +1073,9 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
 
           info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%noiseless_states(:,mod(i,reservoir%batch_size)),beta,y)
           if(model_parameters%precip_bool) then
-            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           else
-            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,grid,model_parameters))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           endif
 
           !print *, 'reservoir derivative
@@ -1095,7 +1093,7 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
           !info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,reservoir%batch_size),beta,y)
           info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%noiseless_saved_state,beta,y)
           if(model_parameters%precip_bool) then
-            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,grid,model_parameters))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           endif
@@ -1107,7 +1105,7 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
         else
           info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%noiseless_states(:,mod(i,reservoir%batch_size)),beta,y)
           if(model_parameters%precip_bool) then
-            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,grid,model_parameters))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           endif
@@ -1125,7 +1123,7 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
 
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,mod(i,reservoir%batch_size),k),beta,y)
           if(model_parameters%precip_bool) then
-            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,grid,model_parameters))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           else
             temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           endif
@@ -1159,7 +1157,7 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
 
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%saved_state_training(:,k),beta,y)
           if(model_parameters%precip_bool) then
-            temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,grid,model_parameters))
+            temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           endif
@@ -1172,7 +1170,7 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
         else
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,mod(i,reservoir%batch_size),k),beta,y)
           if(model_parameters%precip_bool) then
-            temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,grid,model_parameters))
+            temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           endif
@@ -1221,7 +1219,7 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
       do i=1, model_parameters%discardlength/model_parameters%timestep
          info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,x,beta,y)
          if(model_parameters%precip_bool) then
-           temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),reservoir%noisemag,grid,model_parameters))
+           temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
          else
            temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
          endif
@@ -1243,7 +1241,7 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
       do i=1, model_parameters%discardlength/model_parameters%timestep
          info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,x,beta,y)
          if(model_parameters%precip_bool) then
-           temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),beta,grid,model_parameters))
+           temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
          else
            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
          endif
@@ -1273,9 +1271,9 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
 
           info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%noiseless_states(:,mod(i,reservoir%batch_size)),beta,y)
           if(.not.model_parameters%precip_bool) then
-            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           else
-            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,grid,model_parameters))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           endif
 
           !print *, 'reservoir derivative
@@ -1293,7 +1291,7 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
           !info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,reservoir%batch_size),beta,y)
           info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%noiseless_saved_state,beta,y)
           if(model_parameters%precip_bool) then
-            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,grid,model_parameters))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           endif
@@ -1305,7 +1303,7 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
         else
           info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%noiseless_states(:,mod(i,reservoir%batch_size)),beta,y)
           if(model_parameters%precip_bool) then
-            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,grid,model_parameters))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           endif
@@ -1323,7 +1321,7 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
 
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,mod(i,reservoir%batch_size),k),beta,y)
           if(model_parameters%precip_bool) then
-            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,grid,model_parameters))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           else
             temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           endif
@@ -1356,7 +1354,7 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
 
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%saved_state_training(:,k),beta,y)
           if(model_parameters%precip_bool) then
-            temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,grid,model_parameters))
+            temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           endif
@@ -1369,7 +1367,7 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
         else
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,mod(i,reservoir%batch_size),k),beta,y)
           if(model_parameters%precip_bool) then
-            temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,grid,model_parameters))
+            temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           endif
@@ -1444,12 +1442,12 @@ subroutine fit_chunk_ml(reservoir,model_parameters,grid)
     deallocate(b_trans)
 
     write(level_char,'(i0.2)') grid%level_index
-    if(reservoir%assigned_region == 954) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_954_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
-    if(reservoir%assigned_region == 217) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_217_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
-    if(reservoir%assigned_region == 218) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_218_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
+    !if(reservoir%assigned_region == 954) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_954_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
+    !if(reservoir%assigned_region == 217) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_217_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
+    !if(reservoir%assigned_region == 218) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_218_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
 
-    if((reservoir%assigned_region == 954).and.(.not.(reservoir%use_mean))) call write_netcdf_2d_non_met_data(reservoir%approx_grad_reg,'approx_grad_reg','region_954_level_'//level_char//'approx_grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless')
-    if((reservoir%assigned_region == 954).and.(reservoir%gradregmag > 0.)) call write_netcdf_2d_non_met_data(reservoir%grad_reg,'grad_reg','region_954_level_'//level_char//'grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    !if((reservoir%assigned_region == 954).and.(.not.(reservoir%use_mean))) call write_netcdf_2d_non_met_data(reservoir%approx_grad_reg,'approx_grad_reg','region_954_level_'//level_char//'approx_grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    !if((reservoir%assigned_region == 954).and.(reservoir%gradregmag > 0.)) call write_netcdf_2d_non_met_data(reservoir%grad_reg,'grad_reg','region_954_level_'//level_char//'grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless')
 
     call write_trained_res(reservoir,model_parameters,grid)
 
@@ -1553,13 +1551,13 @@ subroutine fit_chunk_hybrid(reservoir,model_parameters,grid)
     deallocate(a_trans)
     deallocate(b_trans)
 
-    if(reservoir%assigned_region == 954) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_954_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
-    if(reservoir%assigned_region == 217) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_217_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
-    if(reservoir%assigned_region == 218) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_218_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    !if(reservoir%assigned_region == 954) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_954_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    !if(reservoir%assigned_region == 217) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_217_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    !if(reservoir%assigned_region == 218) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_218_level_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless')
 
-    call write_trained_res(reservoir,model_parameters,grid)
-    if((reservoir%assigned_region == 954).and.(.not.(reservoir%use_mean))) call write_netcdf_2d_non_met_data(reservoir%approx_grad_reg,'approx_grad_reg','region_954_level_'//level_char//'approx_grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless')
-    if((reservoir%assigned_region == 954).and.(reservoir%gradregmag > 0.)) call write_netcdf_2d_non_met_data(reservoir%grad_reg,'grad_reg','region_954_level_'//level_char//'grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    !call write_trained_res(reservoir,model_parameters,grid)
+    !if((reservoir%assigned_region == 954).and.(.not.(reservoir%use_mean))) call write_netcdf_2d_non_met_data(reservoir%approx_grad_reg,'approx_grad_reg','region_954_level_'//level_char//'approx_grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless')
+    !if((reservoir%assigned_region == 954).and.(reservoir%gradregmag > 0.)) call write_netcdf_2d_non_met_data(reservoir%grad_reg,'grad_reg','region_954_level_'//level_char//'grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless')
     
     if(write_training_weights) then
        call write_trained_res(reservoir,model_parameters,grid)
