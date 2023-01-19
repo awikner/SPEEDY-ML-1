@@ -23,11 +23,11 @@ subroutine initialize_model_parameters(model_parameters,processor,num_of_procs)
    write_training_weights = .True.
 
    model_parameters%num_predictions = 0
-   model_parameters%trial_name = '6000_20_20_20_beta_res0.001_beta_model_1.0_prior_0.0_overlap1_vertlevel_1_precip_epsilon0.001_ocean_model7d_0.0001beta_sigma0.6_noise1_dp' !14d_0.9rho_10noise_beta0.001_20years'  
+   model_parameters%trial_name = '6000_20_20_20_beta_res0.001_beta_model_1.0_prior_0.0_overlap1_vertlevel_1_precip_epsilon0.001_ocean_model7d_0.0001beta_sigma0.6_lmnt02_dp' !14d_0.9rho_10noise_beta0.001_20years'  
    !model_parameters%trial_name = '6000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_4_vertlap_6_slab_ocean_model_true_precip_true'
    !'4000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_4_vertlap_2_full_timestep_1'
    !model_parameters%trial_name = '4000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_4_vertlap_2_full_test_climate_all_tisr_longer'
-   model_parameters%trial_name_extra_end = 'lmnt_test'!'climo_2kbias_10_year_then_platue_speedy_bc_atmo_no_ice_2k_sst_mean_20std_increase_'
+   model_parameters%trial_name_extra_end = 'lmnt_test_5reals'!'climo_2kbias_10_year_then_platue_speedy_bc_atmo_no_ice_2k_sst_mean_20std_increase_'
 
    model_parameters%discardlength = 24*10!7
    model_parameters%traininglength = 8160!227760 - 24*10!166440 - 24*10  !87600*2+24*10!3+24*10!188280 !254040 !81600!188280!0!0!0!166600!81600 !00!58000!67000!77000
@@ -95,7 +95,7 @@ subroutine allocate_res_new(reservoir,grid,model_parameters)
   reservoir%sigma = 0.5_dp
 
   reservoir%prior_val = 0.0_dp
-  reservoir%gradregmag = 0.0_dp
+  reservoir%gradregmag = 0.2_dp
   reservoir%noise_steps = 2 !Must be > 1
   reservoir%grad_reg_num_sparse = 2 !DON'T CHANGE
   reservoir%grad_reg_num_of_batches = 2
