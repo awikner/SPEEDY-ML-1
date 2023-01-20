@@ -34,7 +34,7 @@ subroutine initialize_slab_ocean_model(reservoir,grid,model_parameters)
   reservoir%sigma = 0.6_dp !0.5_dp
 
   reservoir%prior_val = 0.0_dp
-  reservoir%gradregmag = 0.0_dp
+  reservoir%gradregmag = 0.10_dp
   reservoir%noise_steps = 2 !Must be > 1
   reservoir%grad_reg_num_sparse = 2 !DON'T CHANGE
   reservoir%grad_reg_num_of_batches = 2
@@ -45,7 +45,7 @@ subroutine initialize_slab_ocean_model(reservoir,grid,model_parameters)
 
   reservoir%density = reservoir%deg/reservoir%m
 
-  reservoir%noisemag = 0.10
+  reservoir%noisemag = 0.0
 
   reservoir%leakage = 1.0_dp!/14.0_dp !/4.0_dp !12.0_dp
   reservoir%use_leakage = (reservoir%leakage.ne.1.0_dp)
@@ -858,11 +858,11 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
       y = 0
       do i=1, model_parameters%discardlength/model_parameters%timestep
          info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,x,beta,y)
-         if(model_parameters%precip_bool) then
-           temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
-         else
+         !if(model_parameters%precip_bool) then
+         !  temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+         !else
            temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
-         endif
+         !endif
          x_ = tanh(y+temp)
 
          x = (1_dp-reservoir%leakage)*x + reservoir%leakage*x_
@@ -880,11 +880,11 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
       y = 0
       do i=1, model_parameters%discardlength/model_parameters%timestep
          info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,x,beta,y)
-         if(model_parameters%precip_bool) then
-           temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
-         else
+         !if(model_parameters%precip_bool) then
+         !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+         !else
            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
-         endif
+         !endif
          x_ = tanh(y+temp)
 
          x = (1_dp-reservoir%leakage)*x + reservoir%leakage*x_
@@ -910,11 +910,11 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
           batch_number = batch_number + 1
 
           info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%noiseless_states(:,mod(i,reservoir%batch_size)),beta,y)
-          if(model_parameters%precip_bool) then
-            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
-          else
+          !if(model_parameters%precip_bool) then
+          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
-          endif
+          !endif
 
           !print *, 'reservoir derivative
           !',i,reservoir%reservoir_derivative(1:3,reservoir%batch_size)
@@ -930,11 +930,11 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
 
           !info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,reservoir%batch_size),beta,y)
           info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%noiseless_saved_state,beta,y)
-          if(model_parameters%precip_bool) then
-            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
-          else
+          !if(model_parameters%precip_bool) then
+          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
-          endif
+          !endif
           !print *, 'reservoir derivative
           !',i,reservoir%reservoir_derivative(1:3,1)
           x_ = tanh(y+temp)
@@ -942,11 +942,11 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
 
         else
           info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%noiseless_states(:,mod(i,reservoir%batch_size)),beta,y)
-          if(model_parameters%precip_bool) then
-            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
-          else
+          !if(model_parameters%precip_bool) then
+          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
-          endif
+          !endif
           x_ = tanh(y+temp)
           reservoir%noiseless_states(:,mod(i+1,reservoir%batch_size)) = (1-reservoir%leakage)*reservoir%noiseless_states(:,mod(i,reservoir%batch_size)) + reservoir%leakage*x_
         endif
@@ -960,11 +960,11 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
           endif
 
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,mod(i,reservoir%batch_size),k),beta,y)
-          if(model_parameters%precip_bool) then
-            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
-          else
+          !if(model_parameters%precip_bool) then
+          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !else
             temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
-          endif
+          !endif
           x__ = y+temp
           x_  = tanh(x__)
           reservoir%reservoir_derivative(:,reservoir%batch_size) = reservoir%leakage/(cosh(x__)**2)
@@ -995,11 +995,11 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
           print *,'new state',i, 'region',reservoir%assigned_region
 
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%saved_state_training(:,k),beta,y)
-          if(model_parameters%precip_bool) then
-            temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
-          else
+          !if(model_parameters%precip_bool) then
+          !  temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
-          endif
+          !endif
           x__ = y+temp
           x_  = tanh(x__)
           reservoir%reservoir_derivative(:,1) = 1.0/(cosh(x__)**2)
@@ -1009,11 +1009,11 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
 
         else
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,mod(i,reservoir%batch_size),k),beta,y)
-          if(model_parameters%precip_bool) then
-            temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
-          else
+          !if(model_parameters%precip_bool) then
+          !  temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
-          endif
+          !endif
           x__ = y+temp
           x_  = tanh(x__)
           reservoir%reservoir_derivative(:,mod(i+1,reservoir%batch_size)) = 1.0/(cosh(x__)**2)
@@ -1058,11 +1058,11 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
       y = 0
       do i=1, model_parameters%discardlength/model_parameters%timestep
          info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,x,beta,y)
-         if(model_parameters%precip_bool) then
-           temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
-         else
+         !if(model_parameters%precip_bool) then
+         !  temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+         !else
            temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
-         endif
+         !endif
          x_ = tanh(y+temp)
 
          x = (1_dp-reservoir%leakage)*x + reservoir%leakage*x_
@@ -1080,11 +1080,11 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
       y = 0
       do i=1, model_parameters%discardlength/model_parameters%timestep
          info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,x,beta,y)
-         if(model_parameters%precip_bool) then
-           temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
-         else
+         !if(model_parameters%precip_bool) then
+         !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+         !else
            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
-         endif
+         !endif
          x_ = tanh(y+temp)
 
          x = (1_dp-reservoir%leakage)*x + reservoir%leakage*x_
@@ -1110,11 +1110,11 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
           batch_number = batch_number + 1
 
           info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%noiseless_states(:,mod(i,reservoir%batch_size)),beta,y)
-          if(.not.model_parameters%precip_bool) then
-            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
-          else
+          !if(.not.model_parameters%precip_bool) then
+          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
-          endif
+          !endif
 
           !print *, 'reservoir derivative
           !',i,reservoir%reservoir_derivative(1:3,reservoir%batch_size)
@@ -1130,11 +1130,11 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
 
           !info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,reservoir%batch_size),beta,y)
           info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%noiseless_saved_state,beta,y)
-          if(model_parameters%precip_bool) then
-            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
-          else
+          !if(model_parameters%precip_bool) then
+          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
-          endif
+          !endif
           !print *, 'reservoir derivative
           !',i,reservoir%reservoir_derivative(1:3,1)
           x_ = tanh(y+temp)
@@ -1142,11 +1142,11 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
 
         else
           info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%noiseless_states(:,mod(i,reservoir%batch_size)),beta,y)
-          if(model_parameters%precip_bool) then
-            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
-          else
+          !if(model_parameters%precip_bool) then
+          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
-          endif
+          !endif
           x_ = tanh(y+temp)
           reservoir%noiseless_states(:,mod(i+1,reservoir%batch_size)) = (1-reservoir%leakage)*reservoir%noiseless_states(:,mod(i,reservoir%batch_size)) + reservoir%leakage*x_
         endif
@@ -1160,11 +1160,11 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
           endif
 
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,mod(i,reservoir%batch_size),k),beta,y)
-          if(model_parameters%precip_bool) then
-            temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
-          else
+          !if(model_parameters%precip_bool) then
+          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !else
             temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
-          endif
+          !endif
           x__ = y+temp
           x_  = tanh(x__)
           reservoir%reservoir_derivative(:,reservoir%batch_size) = reservoir%leakage/(cosh(x__)**2)
@@ -1194,11 +1194,11 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
           print *,'new state',i, 'region',reservoir%assigned_region
 
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%saved_state_training(:,k),beta,y)
-          if(model_parameters%precip_bool) then
-            temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
-          else
+          !if(model_parameters%precip_bool) then
+          !  temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
-          endif
+          !endif
           x__ = y+temp
           x_  = tanh(x__)
           reservoir%reservoir_derivative(:,1) = 1.0/(cosh(x__)**2)
@@ -1208,11 +1208,11 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
         
         else
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,mod(i,reservoir%batch_size),k),beta,y)
-          if(model_parameters%precip_bool) then
-            temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
-          else
+          !if(model_parameters%precip_bool) then
+          !  temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !else
             temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
-          endif
+          !endif
           x__ = y+temp
           x_  = tanh(x__)
           reservoir%reservoir_derivative(:,mod(i+1,reservoir%batch_size)) = 1.0/(cosh(x__)**2)
