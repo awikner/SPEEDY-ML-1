@@ -2161,7 +2161,7 @@ subroutine initialize_chunk_training(reservoir,model_parameters)
    allocate(reservoir%saved_state_training(reservoir%n,reservoir%noise_realizations))
    allocate(reservoir%saved_state(reservoir%n))
    if(reservoir%gradregmag > 0.0) then
-     allocate(reservoir%grad_reg(reservoir%n+reservoir%chunk_size_prediction,reservoir%n+reservoir%chunk_size_prediction))
+     allocate(reservoir%grad_reg(reservoir%n+reservoir%chunk_size_speedy,reservoir%n+reservoir%chunk_size_speedy))
      reservoir%grad_reg = 0.0_dp
    endif
 
