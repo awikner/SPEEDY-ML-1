@@ -67,7 +67,7 @@ program main
   !---This is for debugging----!
   !You can run the code with a small number of processors and look at a few
   !regions of the globe 
-  if(res%model_parameters%irank == 4) res%model_parameters%region_indices(1) = 954
+  !if(res%model_parameters%irank == 4) res%model_parameters%region_indices(1) = 954
   !if(res%model_parameters%irank == 2) res%model_parameters%region_indices(1) = 552
   !if(res%model_parameters%irank == 3)  res%model_parameters%region_indices(1) = 36
 
