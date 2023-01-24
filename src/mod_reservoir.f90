@@ -22,16 +22,16 @@ subroutine initialize_model_parameters(model_parameters,processor,num_of_procs)
    
    write_training_weights = .True.
 
-   model_parameters%num_predictions = 0
+   model_parameters%num_predictions = 1
    model_parameters%trial_name = '6000_20_20_20_beta_res0.001_beta_model_1.0_prior_0.0_overlap1_vertlevel_1_precip_epsilon0.001_ocean_model7d_0.0001beta_sigma0.6_lmnt02_oceanlmnt01_dp' !14d_0.9rho_10noise_beta0.001_20years'  
    !model_parameters%trial_name = '6000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_4_vertlap_6_slab_ocean_model_true_precip_true'
    !'4000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_4_vertlap_2_full_timestep_1'
    !model_parameters%trial_name = '4000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_4_vertlap_2_full_test_climate_all_tisr_longer'
-   model_parameters%trial_name_extra_end = ''!'climo_2kbias_10_year_then_platue_speedy_bc_atmo_no_ice_2k_sst_mean_20std_increase_'
+   model_parameters%trial_name_extra_end = 'nocomps'!'climo_2kbias_10_year_then_platue_speedy_bc_atmo_no_ice_2k_sst_mean_20std_increase_'
 
    model_parameters%discardlength = 24*10!7
-   model_parameters%traininglength = 8760!166440 - 24*10  !87600*2+24*10!3+24*10!188280 !254040 !81600!188280!0!0!0!166600!81600 !00!58000!67000!77000
-   model_parameters%predictionlength = 8760*10!*31 + 24*5!8760*30 + 24*5!504!8760*11 + 24*5 !504!0
+   model_parameters%traininglength = 227760 - 24*10!166440 - 24*10  !87600*2+24*10!3+24*10!188280 !254040 !81600!188280!0!0!0!166600!81600 !00!58000!67000!77000
+   model_parameters%predictionlength = 8760*40!*31 + 24*5!8760*30 + 24*5!504!8760*11 + 24*5 !504!0
    model_parameters%synclength = 24*14 !24*14*2 !+ 180*24
    model_parameters%timestep = 6!1 !6
    model_parameters%timestep_slab = 24*7!24*7!*14!*2!*7
@@ -68,7 +68,7 @@ subroutine initialize_model_parameters(model_parameters,processor,num_of_procs)
 
    model_parameters%model_noise = 0.0_dp
   
-   model_parameters%outvec_component_contribs = .True.
+   model_parameters%outvec_component_contribs = .False.
 
    call distribute_prediction_marker(model_parameters)
 
@@ -953,7 +953,7 @@ subroutine get_full_sst_climo(reservoir,model_parameters,grid)
    character(len=:), allocatable :: file_path
    character(len=:), allocatable :: tisr_file
 
-   file_path = '/scratch/user/troyarcomano/ERA_5/'
+   file_path = '/scratch/user/awikner/ERA_5/'
    tisr_file = file_path//'sst_regridded_climo1981_2021_gcc.nc'
 
    print *, 'sst_file',tisr_file
@@ -1693,7 +1693,7 @@ subroutine predict(reservoir,model_parameters,grid,x,local_model_in)
        reservoir%v_ml = matmul(reservoir%wout(:,reservoir%chunk_size_speedy+1:reservoir%chunk_size_speedy+reservoir%n),x_temp)
     endif 
       
-    if(reservoir%assigned_region == 954) then
+    if((reservoir%assigned_region==954).and.model_parameters%outvec_component_contribs) then
       print *,'reservoir%v_p',reservoir%v_p
       print *,'reservoir%v_ml',reservoir%v_ml
       print *,'reservoir%v_ml + reservoir%v_p',reservoir%v_ml + reservoir%v_p

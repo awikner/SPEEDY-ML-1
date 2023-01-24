@@ -1280,7 +1280,7 @@ module mpires
            write(day,'(I2.2)') calendar%currentday
            write(hour,'(I2.2)') calendar%currenthour
 
-           file_path = '/scratch/user/troyarcomano/Predictions/Hybrid/'
+           file_path = '/scratch/user/awikner/Predictions/Hybrid/'
            date_file = month//'_'//day//'_'//year//'_'//hour
            hybrid_out_file_name = file_path//hybrid_out_root//res%model_parameters%trial_name//res%model_parameters%trial_name_extra_end//trial_word//date_file//file_end
 
@@ -1481,7 +1481,7 @@ module mpires
            write(day,'(I2.2)') calendar%currentday
            write(hour,'(I2.2)') calendar%currenthour
 
-           file_path = '/scratch/user/troyarcomano/Predictions/Hybrid/'
+           file_path = '/scratch/user/awikner/Predictions/Hybrid/'
            date_file = month//'_'//day//'_'//year//'_'//hour
            hybrid_out_file_name = file_path//hybrid_out_root//res%model_parameters%trial_name//res%model_parameters%trial_name_extra_end//trial_word//date_file//file_end
 

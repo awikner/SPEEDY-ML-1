@@ -337,7 +337,7 @@ module speedy_res_interface
      do year_i=start_year,end_year
          write(year,'(I4)') year_i
 
-         file_path = '/scratch/user/troyarcomano/ERA_5/'//year//'/'
+         file_path = '/scratch/user/awikner/ERA_5/'//year//'/'
          regrid_file_name = file_path//file_begin//year//regrid_mpi//file_end
 
          print *, 'regrid_file_name',regrid_file_name
@@ -387,7 +387,7 @@ module speedy_res_interface
 
          print *, 'reservoir%sst_climo_bool',reservoir%sst_climo_bool, reservoir%assigned_region
          if(reservoir%sst_climo_bool) then
-           sst_climo_file = '/scratch/user/troyarcomano/ERA_5/regridded_era_sst_climatology1981_1999_gcc.nc'
+           sst_climo_file = '/scratch/user/awikner/ERA_5/regridded_era_sst_climatology1981_1999_gcc.nc'
            if(year_i == start_year) then
               if(model_parameters%irank == 0) print *, sst_climo_file
               call read_3d_file_parallel(sst_climo_file,'sst',mpi_res,grid,era_data_temp%era_sst_climo,1,1)
