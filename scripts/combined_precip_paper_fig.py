@@ -71,7 +71,7 @@ def get_era5_precip_timeseries(startdate,enddate,timestep):
     currentdate = startdate
     counter = 0
     while currentdate.year <= enddate.year:
-        ds_era = xr.open_dataset(f'/scratch/user/troyarcomano/ERA_5/{currentdate.year}/era_5_y{currentdate.year}_precip_regridded_mpi.nc')
+        ds_era = xr.open_dataset(f'/scratch/user/awikner/ERA_5/{currentdate.year}/era_5_y{currentdate.year}_precip_regridded_mpi.nc')
 
         begin_year = datetime(currentdate.year,1,1,0)
         begin_year_str = begin_year.strftime("%Y-%m-%d")
@@ -191,11 +191,11 @@ def histo_precip():
     enddate_climo = datetime(2010,12,31,0)
 
 
-    ds_hybrid = xr.open_dataset('/scratch/user/troyarcomano/Predictions/Hybrid/hybrid_prediction_era6000_20_20_20_beta_res0.001_beta_model_1.0_prior_0.0_overlap1_vertlevels_1_vertlap_0_tstep6_ml_only_ocean_leak_averaged_atmotrial_12_31_1999_00.nc')#
 
+    es_hybrid = xr.open_dataset('/scratch/iser/awikner/Predictions/Hybrid/hybrid_prediction_era6000_20_20_20_beta_res0.001_beta_model_1.0_prior_0.0_overlap1_vertlevel_1_precip_epsilon0.001_ocean_model7d_0.0001beta_sigma0.6_lmnt02_oceanlmnt01_dp12_29_2006_00.nc')#
     timestep = 6
 
-    ds_speedy = xr.open_dataset('/scratch/user/troyarcomano/temp_storage/speedy_slab_ocean_original_sim.nc')
+    ds_speedy = xr.open_dataset('/scratch/user/awikner/temp_storage/speedy_slab_ocean_original_sim.nc')
     ds_speedy = speedy_total_precip(ds_speedy)
     ds_speedy = ds_speedy.sel(time=slice(startdate_climo.strftime("%Y-%m-%d"),enddate_climo.strftime("%Y-%m-%d")))
     print(ds_speedy)
@@ -266,11 +266,11 @@ def cdf_precip():
     enddate_climo = datetime(2010,12,31,0)
 
 
-    ds_hybrid = xr.open_dataset('/scratch/user/troyarcomano/Predictions/Hybrid/hybrid_prediction_era6000_20_20_20_beta_res0.001_beta_model_1.0_prior_0.0_overlap1_vertlevels_1_vertlap_0_tstep6_ml_only_ocean_leak_averaged_atmotrial_12_31_1999_00.nc')#
+    ds_hybrid = xr.open_dataset('/scratch/user/awikner/Predictions/Hybrid/hybrid_prediction_era6000_20_20_20_beta_res0.001_beta_model_1.0_prior_0.0_overlap1_vertlevel_1_precip_epsilon0.001_ocean_model7d_0.0001beta_sigma0.6_lmnt02_oceanlmnt01_dp12_29_2006_00.nc')#
 
     timestep = 6
 
-    ds_speedy = xr.open_dataset('/scratch/user/troyarcomano/temp_storage/speedy_slab_ocean_original_sim.nc')
+    ds_speedy = xr.open_dataset('/scratch/user/awikner/temp_storage/speedy_slab_ocean_original_sim.nc')
     ds_speedy = speedy_total_precip(ds_speedy)
     ds_speedy = ds_speedy.sel(time=slice(startdate_climo.strftime("%Y-%m-%d"),enddate_climo.strftime("%Y-%m-%d")))
     print(ds_speedy)
@@ -340,12 +340,12 @@ def total_precip_bias_plot():
 
     startdate_hybrid = datetime(2007,1,1,0)
     enddate_hybrid  = datetime(2047,12,31,0)
-    #ds_hybrid = xr.open_dataset('/scratch/user/troyarcomano/Predictions/Hybrid/hybrid_prediction_era6000_20_20_20_sigma0.5_beta_res0.001_beta_model_1.0_prior_0.0_overlap1_vertlevel_1_precipclimo_2kbias_10_year_then_platue_speedy_bc_atmo_no_ice_2k_sst_mean_20std_increase_trial_12_29_2006_00.nc')
-    ds_hybrid = xr.open_dataset('/scratch/user/troyarcomano/Predictions/Hybrid/hybrid_prediction_era6000_20_20_20_sigma0.5_beta_res0.001_beta_model_1.0_prior_0.0_overlap1_vertlevel_1_precip_epsilon0.001_multi_gaussian_noise_newest_version_32_processors_root_ssttrial_12_29_2006_00.nc') #hybrid_prediction_era6000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_1_vertlap_0_ocean_model_false_log_preciptrial_12_31_1999_00.nc')#
+    #ds_hybrid = xr.open_dataset('/scratch/user/awikner/Predictions/Hybrid/hybrid_prediction_era6000_20_20_20_sigma0.5_beta_res0.001_beta_model_1.0_prior_0.0_overlap1_vertlevel_1_precipclimo_2kbias_10_year_then_platue_speedy_bc_atmo_no_ice_2k_sst_mean_20std_increase_trial_12_29_2006_00.nc')
+    ds_hybrid = xr.open_dataset('/scratch/user/awikner/Predictions/Hybrid/hybrid_prediction_era6000_20_20_20_beta_res0.001_beta_model_1.0_prior_0.0_overlap1_vertlevel_1_precip_epsilon0.001_ocean_model7d_0.0001beta_sigma0.6_lmnt02_oceanlmnt01_dp12_29_2006_00.nc') #hybrid_prediction_era6000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_1_vertlap_0_ocean_model_false_log_preciptrial_12_31_1999_00.nc')#
 
     timestep = 6
 
-    ds_speedy = xr.open_dataset('/scratch/user/troyarcomano/temp_storage/speedy_slab_ocean_original_sim.nc')
+    ds_speedy = xr.open_dataset('/scratch/user/awikner/temp_storage/speedy_slab_ocean_original_sim.nc')
     ds_speedy = speedy_total_precip(ds_speedy)
 
     ds_speedy = ds_speedy.sel(time=slice(startdate_climo.strftime("%Y-%m-%d"),enddate_climo.strftime("%Y-%m-%d")))
@@ -658,12 +658,12 @@ def total_precip_bias_plot():
     #axgr[8].set_visible(False)
     #plt.subplots_adjust(top=0.982,bottom=0.018,left=0.043,right=0.979,hspace=0.2,wspace=0.2)
    
-    plotdir = '/home/troyarcomano/FortranReservoir/vert_loc_hybridspeedy_leakage/plots/'
+    plotdir = '/home/SPEEDY-ML-1/plots/'
 
-    #plt.savefig(f'{plotdir}annual_precip_totals_and_bias_sst_7day_biggercbar_range_mmday.pdf')
     #plt.close("all")
     #plt.subplot_tool()
     plt.subplots_adjust(top=1.0,bottom=0.064,left=0.053,right=0.953,hspace=0.896,wspace=0.039)
+    plt.savefig(f'{plotdir}annual_precip_totals_and_bias_sst_7day_biggercbar_range_mmday_lmnt.pdf')
     plt.show()
 
 total_precip_bias_plot()
