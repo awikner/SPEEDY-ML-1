@@ -25,7 +25,7 @@ subroutine initialize_slab_ocean_model(reservoir,grid,model_parameters)
 
   model_parameters%ml_only_ocean = .True.
 
-  reservoir%m = 4000!6000
+  reservoir%m = 1000!4000!6000
 
   reservoir%deg = 6
   reservoir%radius = 0.9
@@ -34,18 +34,18 @@ subroutine initialize_slab_ocean_model(reservoir,grid,model_parameters)
   reservoir%sigma = 0.6_dp !0.5_dp
 
   reservoir%prior_val = 0.0_dp
-  reservoir%gradregmag = 0.10_dp
-  reservoir%noise_steps = 2 !Must be > 1
-  reservoir%grad_reg_num_sparse = 2 !DON'T CHANGE
-  reservoir%grad_reg_num_of_batches = 2
-  reservoir%noise_realizations = 1
-  reservoir%use_mean = .True.
+  reservoir%gradregmag = 0.0_dp
+  reservoir%noise_steps = 3 !Must be > 1
+  reservoir%grad_reg_num_sparse = 3 !DON'T CHANGE
+  reservoir%grad_reg_num_of_batches = 1
+  reservoir%noise_realizations = 20
+  reservoir%use_mean = .False.
   reservoir%use_mean_input = .False.
   reservoir%use_mean_state = .False.
 
   reservoir%density = reservoir%deg/reservoir%m
 
-  reservoir%noisemag = 0.0
+  reservoir%noisemag = 0.01
 
   reservoir%leakage = 1.0_dp!/14.0_dp !/4.0_dp !12.0_dp
   reservoir%use_leakage = (reservoir%leakage.ne.1.0_dp)
@@ -165,7 +165,7 @@ subroutine gen_res(reservoir)
    print *,'remake'
    call mklsparse(reservoir)
    
-   if(reservoir%assigned_region == 0) then
+   !if(reservoir%assigned_region == 0) then
      print *, 'region num', reservoir%assigned_region 
      print *, 'radius', reservoir%radius
      print *, 'degree', reservoir%deg
@@ -174,7 +174,7 @@ subroutine gen_res(reservoir)
      print *, 'average', sum(reservoir%vals)/size(reservoir%vals)
      print *, 'k',reservoir%k
      print *, 'eig',eigs
-   endif 
+   !endif 
    
    return 
 end subroutine   
@@ -219,6 +219,7 @@ subroutine train_slab_ocean_model(reservoir,grid,model_parameters)
       
       reservoir%win((i-1)*q+1:i*q,i) = reservoir%sigma*ip
    enddo
+   print *, 'win', reservoir%win(1:4,1)
    
    deallocate(rand)
    deallocate(ip) 
@@ -246,14 +247,14 @@ subroutine train_slab_ocean_model(reservoir,grid,model_parameters)
    endif 
 
    do i=1,model_parameters%timestep_slab
-      print *, 'loop number',i
+      print *, 'ocean loop number',i
       !if(reservoir%assigned_region == 954) print *, 'reservoir%trainingdata(eservoir_numinputs,1:40)',reservoir%trainingdata(reservoir%reservoir_numinputs,1:40)
       !if(reservoir%assigned_region == 690) print *, 'reservoir%imperfect_model_states(:,i) slab',reservoir%imperfect_model_states(:,i)
-      if(reservoir%assigned_region == 690) print *, 'reservoir%trainingdata(:,i) slab', reservoir%trainingdata(:,i)
-      if(reservoir%assigned_region == 690) print *, 'shape(reservoir%trainingdata) slab',shape(reservoir%trainingdata)
-      if(reservoir%assigned_region == 690) print *, 'shape(reservoir%trainingdata(:,i:model_parameters%traininglength:model_parameters%timestep_slab))',shape(reservoir%trainingdata(:,i:model_parameters%traininglength:model_parameters%timestep_slab))
+      !print *, 'reservoir%trainingdata(:,i) slab', reservoir%trainingdata(:,i)
+      !print *, 'shape(reservoir%trainingdata) slab',shape(reservoir%trainingdata)
+      !print *, 'shape(reservoir%trainingdata(:,i:model_parameters%traininglength:model_parameters%timestep_slab))',shape(reservoir%trainingdata(:,i:model_parameters%traininglength:model_parameters%timestep_slab))
 
-      if(reservoir%assigned_region == 690) print *, 'reservoir%trainingdata(grid_atmo%sst_start,i:model_parameters%traininglength:model_parameters%timestep_slab)',reservoir%trainingdata(grid%sst_start,i:model_parameters%traininglength:model_parameters%timestep_slab)
+      !print *, 'reservoir%trainingdata(grid_atmo%sst_start,i:model_parameters%traininglength:model_parameters%timestep_slab)',reservoir%trainingdata(grid%sst_start,i:model_parameters%traininglength:model_parameters%timestep_slab)
       if(reservoir%gradregmag > 0.0_dp) then
           if((i.eq.1).and.(reservoir%use_leakage)) then
             allocate(leakage_diag(reservoir%n))
@@ -271,6 +272,7 @@ subroutine train_slab_ocean_model(reservoir,grid,model_parameters)
           endif
       endif
       if(model_parameters%ml_only_ocean) then 
+        print *, 'Getting ocean reservoir states'
         call reservoir_layer_chunking_ml(reservoir,model_parameters,grid,reservoir%trainingdata(:,i:model_parameters%traininglength:model_parameters%timestep_slab))
       else
         call reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,reservoir%trainingdata(:,i:model_parameters%traininglength:model_parameters%timestep_slab),reservoir%imperfect_model_states(:,i:model_parameters%traininglength:model_parameters%timestep_slab))
@@ -318,8 +320,8 @@ subroutine get_training_data_from_atmo(reservoir,model_parameters,grid,reservoir
    allocate(grid%mean,source=grid_atmo%mean)
    allocate(grid%std, source=grid_atmo%std)
  
-   print *, 'slab grid%mean',grid%mean
-   print *, 'slab grid%std', grid%std
+   !print *, 'slab grid%mean',grid%mean
+   !print *, 'slab grid%std', grid%std
    if(reservoir_atmo%sst_bool_input) then
      print *, 'atmo has sst'
      reservoir%sst_bool_input = .True.
@@ -856,7 +858,7 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
    do k=1,reservoir%noise_realizations
       x = 0
       y = 0
-      do i=1, model_parameters%discardlength/model_parameters%timestep
+      do i=1, model_parameters%discardlength/model_parameters%timestep_slab
          info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,x,beta,y)
          !if(model_parameters%precip_bool) then
          !  temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
@@ -866,6 +868,10 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
          x_ = tanh(y+temp)
 
          x = (1_dp-reservoir%leakage)*x + reservoir%leakage*x_
+         if(reservoir%use_mean) then
+            print *, 'Sync res state at ', i
+            print *, x(1:4)
+         endif
 
          y = 0
       enddo
@@ -878,7 +884,7 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
    if(.not.reservoir%use_mean) then
       x = 0
       y = 0
-      do i=1, model_parameters%discardlength/model_parameters%timestep
+      do i=1, model_parameters%discardlength/model_parameters%timestep_slab
          info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,x,beta,y)
          !if(model_parameters%precip_bool) then
          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
@@ -888,6 +894,8 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
          x_ = tanh(y+temp)
 
          x = (1_dp-reservoir%leakage)*x + reservoir%leakage*x_
+         print *, 'Sync res state at ', i
+         print *, x(1:4)
 
          y = 0
       enddo
@@ -895,15 +903,22 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
    endif
    batch_number = 0
 
-   training_length = size(trainingdata,2) - model_parameters%discardlength/model_parameters%timestep
+   training_length = size(trainingdata,2) - model_parameters%discardlength/model_parameters%timestep_slab
+   !print *, 'ocean training length',training_length
    if(reservoir%gradregmag > 0.0) then
      call mklsparse_matrix(reservoir%win, win_sparse_matrix)
-     print *, 'Converting adjacency matrix to csr...'
+     !print *, 'Converting adjacency matrix to csr...'
      info = mkl_sparse_convert_csr(reservoir%cooA,SPARSE_OPERATION_NON_TRANSPOSE, A_sparse_matrix_csr%matrix)
      A_sparse_matrix_csr%descr%TYPE = SPARSE_MATRIX_TYPE_GENERAL
    endif
    if(reservoir%assigned_region == 0) CALL CPU_TIME(t1)
    do i=1, training_length-1
+      if((.not.reservoir%use_mean).and.(i<7)) then
+        print *, 'Training data ', i
+        print *, trainingdata(1:4,i)
+        print *, 'Noiseless Res state ', i
+        print *, reservoir%noiseless_states(1:4,i)
+      endif
       if(.not.reservoir%use_mean) then
         if(mod(i+1,reservoir%batch_size).eq.0) then
           print *,'noiseless chunking region',reservoir%assigned_region
@@ -911,9 +926,9 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
 
           info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%noiseless_states(:,mod(i,reservoir%batch_size)),beta,y)
           !if(model_parameters%precip_bool) then
-          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           !else
-            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           !endif
 
           !print *, 'reservoir derivative
@@ -933,7 +948,7 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
           !if(model_parameters%precip_bool) then
           !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           !else
-            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           !endif
           !print *, 'reservoir derivative
           !',i,reservoir%reservoir_derivative(1:3,1)
@@ -943,9 +958,9 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
         else
           info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%noiseless_states(:,mod(i,reservoir%batch_size)),beta,y)
           !if(model_parameters%precip_bool) then
-          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           !else
-            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           !endif
           x_ = tanh(y+temp)
           reservoir%noiseless_states(:,mod(i+1,reservoir%batch_size)) = (1-reservoir%leakage)*reservoir%noiseless_states(:,mod(i,reservoir%batch_size)) + reservoir%leakage*x_
@@ -954,16 +969,16 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
       endif
       do k=1, reservoir%noise_realizations
         if(mod(i+1,reservoir%batch_size).eq.0) then
-          print *,'chunking region',reservoir%assigned_region
+          print *,'chunking ocean region',reservoir%assigned_region
           if((k.eq.1).and.(reservoir%use_mean)) then
             batch_number = batch_number + 1
           endif
 
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,mod(i,reservoir%batch_size),k),beta,y)
           !if(model_parameters%precip_bool) then
-          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           !else
-            temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
+            temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           !endif
           x__ = y+temp
           x_  = tanh(x__)
@@ -973,11 +988,11 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
           reservoir%states(:,reservoir%batch_size,k)=(1-reservoir%leakage)*reservoir%states(:,mod(i,reservoir%batch_size),k)+reservoir%leakage*x_
 
           if((reservoir%gradregmag > 0.0).and.((batch_number<=reservoir%grad_reg_num_of_batches).or.((batch_number.eq.1).and.(reservoir%grad_reg_num_of_batches.eq.0))))then
-            print *, 'computing grad reg for region',reservoir%assigned_region,' and batch', batch_number
+            print *, 'computing grad reg for ocean region',reservoir%assigned_region,' and batch', batch_number
             if(batch_number.eq.1) then
-              call chunking_compute_grad_reg(reservoir, win_sparse_matrix, A_sparse_matrix_csr, trainingdata(:,model_parameters%discardlength/model_parameters%timestep+(batch_number-1)*reservoir%batch_size:model_parameters%discardlength/model_parameters%timestep+reservoir%batch_size*batch_number-1),batch_number)
+              call chunking_compute_grad_reg(reservoir, win_sparse_matrix, A_sparse_matrix_csr, trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+(batch_number-1)*reservoir%batch_size:model_parameters%discardlength/model_parameters%timestep_slab+reservoir%batch_size*batch_number-1),batch_number)
             else
-              call chunking_compute_grad_reg(reservoir, win_sparse_matrix,A_sparse_matrix_csr,trainingdata(:,model_parameters%discardlength/model_parameters%timestep+(batch_number-1)*reservoir%batch_size-reservoir%noise_steps+1:model_parameters%discardlength/model_parameters%timestep+reservoir%batch_size*batch_number-1),batch_number)
+              call chunking_compute_grad_reg(reservoir, win_sparse_matrix,A_sparse_matrix_csr,trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+(batch_number-1)*reservoir%batch_size-reservoir%noise_steps+1:model_parameters%discardlength/model_parameters%timestep_slab+reservoir%batch_size*batch_number-1),batch_number)
             endif
           endif
 
@@ -986,19 +1001,19 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
           reservoir%states(2:reservoir%n:2,:,k) = reservoir%states(2:reservoir%n:2,:,k)**2
 
           !print *, 'trainingdata(:,500)',trainingdata(:,500)
-          print *, 'computing matrices for region',reservoir%assigned_region,' and batch', batch_number
+          print *, 'computing matrices for ocean region',reservoir%assigned_region,' and batch', batch_number
           if(k.eq.reservoir%noise_realizations) then
             call chunking_matmul_ml(reservoir,model_parameters,grid,batch_number,trainingdata)
           endif
 
         elseif (mod(i,reservoir%batch_size).eq.0) then
-          print *,'new state',i, 'region',reservoir%assigned_region
+          print *,'new state',i, 'ocean region',reservoir%assigned_region
 
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%saved_state_training(:,k),beta,y)
           !if(model_parameters%precip_bool) then
           !  temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           !else
-            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           !endif
           x__ = y+temp
           x_  = tanh(x__)
@@ -1010,9 +1025,9 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
         else
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,mod(i,reservoir%batch_size),k),beta,y)
           !if(model_parameters%precip_bool) then
-          !  temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !  temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           !else
-            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           !endif
           x__ = y+temp
           x_  = tanh(x__)
@@ -1023,7 +1038,7 @@ subroutine reservoir_layer_chunking_ml(reservoir,model_parameters,grid,trainingd
         y = 0
       enddo
    enddo
-   print *, 'chunking finished for region',reservoir%assigned_region
+   print *, 'chunking finished for ocean region',reservoir%assigned_region
    if(reservoir%assigned_region == 0) CALL CPU_TIME(t2)
    if(reservoir%assigned_region == 0) WRITE(*,*) "Reservoir layer cpu time     : ",(t2-t1)
 
@@ -1056,7 +1071,7 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
    do k=1,reservoir%noise_realizations
       x = 0
       y = 0
-      do i=1, model_parameters%discardlength/model_parameters%timestep
+      do i=1, model_parameters%discardlength/model_parameters%timestep_slab
          info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,x,beta,y)
          !if(model_parameters%precip_bool) then
          !  temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
@@ -1078,7 +1093,7 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
    if(.not.reservoir%use_mean) then
       x = 0
       y = 0
-      do i=1, model_parameters%discardlength/model_parameters%timestep
+      do i=1, model_parameters%discardlength/model_parameters%timestep_slab
          info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,x,beta,y)
          !if(model_parameters%precip_bool) then
          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
@@ -1095,7 +1110,7 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
    endif
    batch_number = 0
 
-   training_length = size(trainingdata,2) - model_parameters%discardlength/model_parameters%timestep
+   training_length = size(trainingdata,2) - model_parameters%discardlength/model_parameters%timestep_slab
    if(reservoir%gradregmag > 0.0) then
      call mklsparse_matrix(reservoir%win, win_sparse_matrix)
      print *, 'Converting adjacency matrix to csr...'
@@ -1111,9 +1126,9 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
 
           info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%noiseless_states(:,mod(i,reservoir%batch_size)),beta,y)
           !if(.not.model_parameters%precip_bool) then
-          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           !else
-            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           !endif
 
           !print *, 'reservoir derivative
@@ -1131,9 +1146,9 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
           !info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,reservoir%batch_size),beta,y)
           info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%noiseless_saved_state,beta,y)
           !if(model_parameters%precip_bool) then
-          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           !else
-            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           !endif
           !print *, 'reservoir derivative
           !',i,reservoir%reservoir_derivative(1:3,1)
@@ -1143,9 +1158,9 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
         else
           info=MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%noiseless_states(:,mod(i,reservoir%batch_size)),beta,y)
           !if(model_parameters%precip_bool) then
-          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           !else
-            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),beta,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           !endif
           x_ = tanh(y+temp)
           reservoir%noiseless_states(:,mod(i+1,reservoir%batch_size)) = (1-reservoir%leakage)*reservoir%noiseless_states(:,mod(i,reservoir%batch_size)) + reservoir%leakage*x_
@@ -1161,9 +1176,9 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
 
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,mod(i,reservoir%batch_size),k),beta,y)
           !if(model_parameters%precip_bool) then
-          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !  temp=matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           !else
-            temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
+            temp = matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           !endif
           x__ = y+temp
           x_  = tanh(x__)
@@ -1175,9 +1190,9 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
           if((reservoir%gradregmag > 0.0).and.((batch_number<=reservoir%grad_reg_num_of_batches).or.((batch_number.eq.1).and.(reservoir%grad_reg_num_of_batches.eq.0))))then
             print *, 'computing grad reg for region',reservoir%assigned_region,' and batch', batch_number
             if(batch_number.eq.1) then
-              call chunking_compute_grad_reg(reservoir, win_sparse_matrix,A_sparse_matrix_csr,trainingdata(:,model_parameters%discardlength/model_parameters%timestep+(batch_number-1)*reservoir%batch_size:model_parameters%discardlength/model_parameters%timestep+reservoir%batch_size*batch_number-1),batch_number)
+              call chunking_compute_grad_reg(reservoir, win_sparse_matrix,A_sparse_matrix_csr,trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+(batch_number-1)*reservoir%batch_size:model_parameters%discardlength/model_parameters%timestep_slab+reservoir%batch_size*batch_number-1),batch_number)
             else
-              call chunking_compute_grad_reg(reservoir,win_sparse_matrix,A_sparse_matrix_csr,trainingdata(:,model_parameters%discardlength/model_parameters%timestep+(batch_number-1)*reservoir%batch_size-reservoir%noise_steps+1:model_parameters%discardlength/model_parameters%timestep+reservoir%batch_size*batch_number-1),batch_number)
+              call chunking_compute_grad_reg(reservoir,win_sparse_matrix,A_sparse_matrix_csr,trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+(batch_number-1)*reservoir%batch_size-reservoir%noise_steps+1:model_parameters%discardlength/model_parameters%timestep_slab+reservoir%batch_size*batch_number-1),batch_number)
             endif
           endif
 
@@ -1195,9 +1210,9 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
 
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%saved_state_training(:,k),beta,y)
           !if(model_parameters%precip_bool) then
-          !  temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !  temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           !else
-            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           !endif
           x__ = y+temp
           x_  = tanh(x__)
@@ -1209,9 +1224,9 @@ subroutine reservoir_layer_chunking_hybrid(reservoir,model_parameters,grid,train
         else
           info = MKL_SPARSE_D_MV(SPARSE_OPERATION_NON_TRANSPOSE,alpha,reservoir%cooA,reservoir%descrA,reservoir%states(:,mod(i,reservoir%batch_size),k),beta,y)
           !if(model_parameters%precip_bool) then
-          !  temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
+          !  temp = matmul(reservoir%win,gaussian_noise_1d_function_precip(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state,grid,model_parameters))
           !else
-            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
+            temp=matmul(reservoir%win,gaussian_noise_1d_function(trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+i),reservoir%noisemag,reservoir%use_mean_input,reservoir%mean_input,reservoir%use_mean_state))
           !endif
           x__ = y+temp
           x_  = tanh(x__)
@@ -1240,7 +1255,7 @@ subroutine chunking_compute_grad_reg(reservoir,win_sparse_matrix,A_sparse_matrix
 
   integer                      :: info, m, n, k, j, rows, cols, dense_end
   real(kind=dp), parameter     :: alpha=1.0_dp,beta=0.0_dp
-  real(kind=dp), allocatable   :: temp(:,:), temp2(:,:), temp3(:,:), states_partsquare(:,:), input_scaling(:)
+  real(kind=dp), allocatable   :: temp(:,:), temp2(:,:), temp3(:,:), temp4(:,:), states_partsquare(:,:), input_scaling(:)
   real(kind=dp)                :: t1, t2, t1_sparse_create, t2_sparse_create,t_sparse_create, t1_main, t2_main, t_main, t1_grad_reg, t2_grad_reg, t_grad_reg
 
 
@@ -1248,12 +1263,30 @@ subroutine chunking_compute_grad_reg(reservoir,win_sparse_matrix,A_sparse_matrix
   n = size(reservoir%states,2)
   print *, 'Res state 1'
   print *, reservoir%states(1:4,1,1)
+  print *, 'Res state 2'
+  print *, reservoir%states(1:4,2,1)
+  print *, 'Res state 3'
+  print *, reservoir%states(1:4,3,1)
+  print *, 'Res state 4'
+  print *, reservoir%states(1:4,4,1)
+  print *, 'Res state ', 5
+  print *, reservoir%states(1:4,5,1)
+  print *, 'Res state ', 6
+  print *, reservoir%states(1:4,6,1)
   print *, 'Res state ', n
   print *, reservoir%states(1:4,n,1)
   print *, 'Res derivative 1'
   print *, reservoir%reservoir_derivative(1:4,1)
   print *, 'Res derivative ', n
   print *, reservoir%reservoir_derivative(1:4,n)
+  print *, 'Training data 1'
+  print *, trainingdata(1:4,1)
+  print *, 'Training data 2'
+  print *, trainingdata(1:4,2)
+  print *, 'Training data 3'
+  print *, trainingdata(1:4,3)
+  print *, 'Training data ', n
+  print *, trainingdata(1:4,n)
 
   allocate(input_scaling(reservoir%reservoir_numinputs))
   allocate(states_partsquare(m, n))
@@ -1275,6 +1308,7 @@ subroutine chunking_compute_grad_reg(reservoir,win_sparse_matrix,A_sparse_matrix
 
   allocate(temp(reservoir%n, reservoir%reservoir_numinputs))
   allocate(temp2(reservoir%n,reservoir%n))
+  allocate(temp4(reservoir%n,reservoir%n))
   allocate(temp3(reservoir%reservoir_numinputs, reservoir%n))
   temp = 0.0_dp
   temp2 = 0.0_dp
@@ -1286,26 +1320,26 @@ subroutine chunking_compute_grad_reg(reservoir,win_sparse_matrix,A_sparse_matrix
   t_grad_reg      = 0.0_dp
   dense_end       = reservoir%noise_steps - reservoir%grad_reg_num_sparse
 
-  print *, 'Win'
-  print *, reservoir%win(1:3,1)
+  !print *, 'Win'
+  !print *, reservoir%win(1:3,1)
   if(reservoir%assigned_region == 0) CALL CPU_TIME(t1)
   if(batch_number.eq.1) then
     do k=1,reservoir%noise_steps
       call mklsparse_diag(reservoir%reservoir_derivative(:,k+1),sparse_derivative)
-      if(reservoir%assigned_region == 0) then
-        print *, 'Reservoir derivative at iter ',k+1,':'
-        print *, reservoir%reservoir_derivative(1:3,k+1)
-      endif
+      !if(reservoir%assigned_region == 0) then
+      !  print *, 'Reservoir derivative at iter ',k+1,':'
+      !  print *, reservoir%reservoir_derivative(1:3,k+1)
+      !endif
       if(k<=dense_end) then
         info=mkl_sparse_d_spmmd(SPARSE_OPERATION_NON_TRANSPOSE,sparse_derivative%matrix, win_sparse_matrix%matrix, SPARSE_LAYOUT_COLUMN_MAJOR,temp,reservoir%n)
         if(info.ne.0) then
             print *, 'MKL sparse creation of temp failed because of stat error',info,'exiting'
             stop
         endif
-        if(reservoir%assigned_region == 0) then
-          print *, 'Partial u at iter ',k+1,':'
-          print *, temp(1:5,1)
-        endif
+        !if(reservoir%assigned_region == 0) then
+        !  print *, 'Partial u at iter ',k+1,':'
+        !  print *, temp(1:5,1)
+        !endif
         reservoir%grad_reg_comps%grad_reg_comps_dense(:,:,k) = temp
       else
         info=mkl_sparse_spmm(SPARSE_OPERATION_NON_TRANSPOSE,sparse_derivative%matrix,win_sparse_matrix%matrix,reservoir%grad_reg_comps%grad_reg_comps_sparse(k-dense_end)%matrix)
@@ -1313,10 +1347,10 @@ subroutine chunking_compute_grad_reg(reservoir,win_sparse_matrix,A_sparse_matrix
             print *, 'MKL sparse creation of grad_reg_comps_sparse failed because of stat error',info,'exiting'
             stop
         endif
-        if(reservoir%assigned_region == 0) then
-          print *, 'Partial u at iter ',k+1,':'
-          call explore_csr_matrix(reservoir%grad_reg_comps%grad_reg_comps_sparse(k-dense_end))
-        endif
+        !if(reservoir%assigned_region == 0) then
+        !  print *, 'Partial u at iter ',k+1,':'
+        !  call explore_csr_matrix(reservoir%grad_reg_comps%grad_reg_comps_sparse(k-dense_end))
+        !endif
       endif
       info = mkl_sparse_destroy(sparse_derivative%matrix)
       temp = 0.0_dp
@@ -1340,10 +1374,10 @@ subroutine chunking_compute_grad_reg(reservoir,win_sparse_matrix,A_sparse_matrix
         print *, 'MKL sparse creation of sparse_partial_r failed because of stat error',info,'exiting'
         stop
       endif
-      if(reservoir%assigned_region == 0) then
-        print *, 'Partial r at iter ',k+2,':'
-        call explore_csr_matrix(sparse_partial_r)
-      endif
+      !if(reservoir%assigned_region == 0) then
+      !  print *, 'Partial r at iter ',k+2,':'
+      !  call explore_csr_matrix(sparse_partial_r)
+      !endif
       do j=1,k
         if(j<=dense_end) then
           info=mkl_sparse_d_mm(SPARSE_OPERATION_NON_TRANSPOSE,alpha,sparse_partial_r%matrix,sparse_partial_r%descr,SPARSE_LAYOUT_COLUMN_MAJOR,reservoir%grad_reg_comps%grad_reg_comps_dense(:,:,j),reservoir%reservoir_numinputs,reservoir%n,beta,temp,reservoir%n)
@@ -1378,22 +1412,23 @@ subroutine chunking_compute_grad_reg(reservoir,win_sparse_matrix,A_sparse_matrix
     end do
     do k=1,reservoir%noise_steps
       if(reservoir%assigned_region == 0) then
-        print *, 'Reg comp base at iter ',k+1,':'
-        if(k<=dense_end) then
-          print *, reservoir%grad_reg_comps%grad_reg_comps_dense(1:5,1,k)
-        else
-          call explore_csr_matrix(reservoir%grad_reg_comps%grad_reg_comps_sparse(k-dense_end))
-        endif
+        !print *, 'Reg comp base at iter ',k+1,':'
+        !if(k<=dense_end) then
+        !  print *, reservoir%grad_reg_comps%grad_reg_comps_dense(1:5,1,k)
+        !else
+        !  call explore_csr_matrix(reservoir%grad_reg_comps%grad_reg_comps_sparse(k-dense_end))
+        !endif
       endif
     end do
     print *, 'Finished computing and assigning reservoir jacobians'
 
     if(reservoir%grad_reg_num_of_batches>0) then
     do k=reservoir%noise_steps+2,n
+      temp4 = 0.0_dp
       if(reservoir%assigned_region == 0) CALL CPU_TIME(t1_main)
       if(reservoir%assigned_region == 0) CALL CPU_TIME(t1_grad_reg)
       if(k.eq.(reservoir%noise_steps+2)) then
-        print *, 'Statest mult'
+        print *, 'States mult'
         print *, states_partsquare(1:5, k-2)
         print *, states_partsquare(1:5, k-1)
         print *, states_partsquare(1:5, k)
@@ -1420,30 +1455,30 @@ subroutine chunking_compute_grad_reg(reservoir,win_sparse_matrix,A_sparse_matrix
             print *, 'MKL sparse creation of grad_reg_comp_dense failed because of stat error',info,'exiting'
             stop
           endif
-          if(k.eq.reservoir%noise_steps+2) then
-            print *, 'Grad reg comp unscaled at iter ',j,':'
-            print *, temp(1:3,1)
-            print *, temp(1:3,2)
-            print *, temp(1:3,3)
-          endif
+          !if(k.eq.reservoir%noise_steps+2) then
+          !  print *, 'Grad reg comp unscaled at iter ',j,':'
+          !  print *, temp(1:3,1)
+          !  print *, temp(1:3,2)
+          !  print *, temp(1:3,3)
+          !endif
           info=mkl_sparse_d_mm(SPARSE_OPERATION_NON_TRANSPOSE,alpha,sparse_input%matrix,sparse_input%descr,SPARSE_LAYOUT_COLUMN_MAJOR,transpose(temp),reservoir%n,reservoir%reservoir_numinputs,beta,temp3,reservoir%reservoir_numinputs)
           if(info.ne.0) then
             print *, 'MKL sparse creation of grad_reg_comp_dense 2 failed because of stat error',info,'exiting'
             stop
           endif
-          if(k.eq.reservoir%noise_steps+2) then
-            print *, 'Grad reg comp at iter ',j,':'
-            print *, temp3(1:3,1)
-            print *, temp3(1:3,2)
-            print *, temp3(1:3,3)
-          endif
+          !if(k.eq.reservoir%noise_steps+2) then
+          !  print *, 'Grad reg comp at iter ',j,':'
+          !  print *, temp3(1:3,1)
+          !  print *, temp3(1:3,2)
+          !  print *, temp3(1:3,3)
+          !endif
           temp2 = matmul(transpose(temp3), temp3)
-          if(k.eq.(reservoir%noise_steps+2).AND.(reservoir%assigned_region.eq.0)) then
-            print *, 'Grad reg at iter ',j,':'
-            print *, temp2(1:3,1)
-            print *, temp2(1:3,2)
-            print *, temp2(1:3,3)
-          endif
+          !if(k.eq.(reservoir%noise_steps+2).AND.(reservoir%assigned_region.eq.0)) then
+          !  print *, 'Grad reg at iter ',j,':'
+          !  print *, temp2(1:3,1)
+          !  print *, temp2(1:3,2)
+          !  print *, temp2(1:3,3)
+          !endif
           temp  = 0.0_dp
         else
           info=mkl_sparse_spmm(SPARSE_OPERATION_TRANSPOSE,reservoir%grad_reg_comps%grad_reg_comps_sparse(j-dense_end)%matrix,sparse_state%matrix,sparse_state_grad_reg_comp_unscaled%matrix)
@@ -1474,19 +1509,25 @@ subroutine chunking_compute_grad_reg(reservoir,win_sparse_matrix,A_sparse_matrix
             print *, 'MKL sparse computation of grad_reg failed because of stat error',info,'exiting'
             stop
           endif
-          if(k.eq.(reservoir%noise_steps+2).AND.(reservoir%assigned_region.eq.0)) then
-            print *, 'Grad reg at iter ',j,':'
-            print *, temp2(1:3,1)
-            print *, temp2(1:3,2)
-            print *, temp2(1:3,3)
-          endif
+          !if(k.eq.(reservoir%noise_steps+2).AND.(reservoir%assigned_region.eq.0)) then
+          !  print *, 'Grad reg at iter ',j,':'
+          !  print *, temp2(1:3,1)
+          !  print *, temp2(1:3,2)
+          !  print *, temp2(1:3,3)
+          !endif
           info=mkl_sparse_destroy(sparse_state_grad_reg_comp%matrix)
           info=mkl_sparse_destroy(sparse_state_grad_reg_comp_unscaled%matrix)
         endif
-        reservoir%grad_reg(1+reservoir%chunk_size_speedy:reservoir%chunk_size_speedy+reservoir%n,1+reservoir%chunk_size_speedy:reservoir%chunk_size_speedy+reservoir%n)=reservoir%grad_reg(1+reservoir%chunk_size_speedy:reservoir%chunk_size_speedy+reservoir%n,1+reservoir%chunk_size_speedy:reservoir%chunk_size_speedy+reservoir%n)+temp2
+        temp4 = temp4 + temp2
+        !reservoir%grad_reg(1+reservoir%chunk_size_speedy:reservoir%chunk_size_speedy+reservoir%n,1+reservoir%chunk_size_speedy:reservoir%chunk_size_speedy+reservoir%n)=reservoir%grad_reg(1+reservoir%chunk_size_speedy:reservoir%chunk_size_speedy+reservoir%n,1+reservoir%chunk_size_speedy:reservoir%chunk_size_speedy+reservoir%n)+temp2
         temp2 = 0.0_dp
         info=mkl_sparse_destroy(sparse_input%matrix)
       end do
+      if(k < reservoir%noise_steps+5) then
+         print *, 'Grad reg at iter ', k
+         print *, temp4(1:3,1:3)
+      endif
+      reservoir%grad_reg(1+reservoir%chunk_size_speedy:reservoir%chunk_size_speedy+reservoir%n,1+reservoir%chunk_size_speedy:reservoir%chunk_size_speedy+reservoir%n)=reservoir%grad_reg(1+reservoir%chunk_size_speedy:reservoir%chunk_size_speedy+reservoir%n,1+reservoir%chunk_size_speedy:reservoir%chunk_size_speedy+reservoir%n)+temp4
       !stop
       info=mkl_sparse_destroy(sparse_state%matrix)
       if(reservoir%assigned_region == 0) CALL CPU_TIME(t2_grad_reg)
@@ -1612,10 +1653,10 @@ subroutine chunking_compute_grad_reg(reservoir,win_sparse_matrix,A_sparse_matrix
       info=mkl_sparse_destroy(sparse_input%matrix)
     end do
     info=mkl_sparse_destroy(sparse_state%matrix)
-    if(reservoir%assigned_region == 0)print *, 'Final grad reg:'
-    if(reservoir%assigned_region == 0)print*,reservoir%grad_reg(1+reservoir%chunk_size_speedy:3+reservoir%chunk_size_speedy,1+reservoir%chunk_size_speedy)*1e-10
-    if(reservoir%assigned_region == 0)print*,reservoir%grad_reg(1+reservoir%chunk_size_speedy:3+reservoir%chunk_size_speedy,2+reservoir%chunk_size_speedy)*1e-10
-    if(reservoir%assigned_region == 0)print*,reservoir%grad_reg(1+reservoir%chunk_size_speedy:3+reservoir%chunk_size_speedy,3+reservoir%chunk_size_speedy)*1e-10
+    !if(reservoir%assigned_region == 0)print *, 'Final grad reg:'
+    !if(reservoir%assigned_region == 0)print*,reservoir%grad_reg(1+reservoir%chunk_size_speedy:3+reservoir%chunk_size_speedy,1+reservoir%chunk_size_speedy)*1e-10
+    !if(reservoir%assigned_region == 0)print*,reservoir%grad_reg(1+reservoir%chunk_size_speedy:3+reservoir%chunk_size_speedy,2+reservoir%chunk_size_speedy)*1e-10
+    !if(reservoir%assigned_region == 0)print*,reservoir%grad_reg(1+reservoir%chunk_size_speedy:3+reservoir%chunk_size_speedy,3+reservoir%chunk_size_speedy)*1e-10
     if(reservoir%grad_reg_num_of_batches>0) then
       if(reservoir%assigned_region == 0) CALL CPU_TIME(t2_grad_reg)
       if(reservoir%assigned_region == 0) t_grad_reg=t_grad_reg+(t2_grad_reg-t1_grad_reg)
@@ -1758,10 +1799,10 @@ subroutine chunking_compute_grad_reg(reservoir,win_sparse_matrix,A_sparse_matrix
       if(reservoir%assigned_region == 0) CALL CPU_TIME(t2_main)
       if(reservoir%assigned_region == 0) t_main = t_main + (t2_main - t1_main)
     end do
-    if(reservoir%assigned_region == 0)print *, 'Final grad reg:'
-    if(reservoir%assigned_region == 0)print*,reservoir%grad_reg(1+reservoir%chunk_size_speedy:3+reservoir%chunk_size_speedy,1+reservoir%chunk_size_speedy)
-    if(reservoir%assigned_region == 0)print*,reservoir%grad_reg(1+reservoir%chunk_size_speedy:3+reservoir%chunk_size_speedy,2+reservoir%chunk_size_speedy)
-    if(reservoir%assigned_region == 0)print*,reservoir%grad_reg(1+reservoir%chunk_size_speedy:3+reservoir%chunk_size_speedy,3+reservoir%chunk_size_speedy)
+    !if(reservoir%assigned_region == 0)print *, 'Final grad reg:'
+    !if(reservoir%assigned_region == 0)print*,reservoir%grad_reg(1+reservoir%chunk_size_speedy:3+reservoir%chunk_size_speedy,1+reservoir%chunk_size_speedy)
+    !if(reservoir%assigned_region == 0)print*,reservoir%grad_reg(1+reservoir%chunk_size_speedy:3+reservoir%chunk_size_speedy,2+reservoir%chunk_size_speedy)
+    !if(reservoir%assigned_region == 0)print*,reservoir%grad_reg(1+reservoir%chunk_size_speedy:3+reservoir%chunk_size_speedy,3+reservoir%chunk_size_speedy)
     if(reservoir%assigned_region == 0) print *, "Avg. Loop time: ",t_main/(dble(n))
     if(reservoir%assigned_region == 0) print *, "Avg. sparse creation time: ",t_sparse_create/(dble(n))
     if(reservoir%assigned_region == 0) print *, "Avg. grad reg calculation time: ",t_grad_reg/(dble(n))
@@ -1800,6 +1841,11 @@ subroutine fit_chunk_ml(reservoir,model_parameters,grid)
     real(kind=dp), parameter    :: alpha=1.0, beta=0.0
 
     character(len=2) :: level_char
+    character(len=4) :: worker_char
+    character(len=10) :: x_dim, y_dim
+    
+    write(x_dim, '(i0.10)') size(reservoir%states_x_trainingdata_aug,1)
+    write(y_dim, '(i0.10)') size(reservoir%states_x_trainingdata_aug,2)
 
     !Do regularization
 
@@ -1821,18 +1867,22 @@ subroutine fit_chunk_ml(reservoir,model_parameters,grid)
     a_trans = transpose(reservoir%states_x_states_aug)
     b_trans = transpose(reservoir%states_x_trainingdata_aug)
 
-    if(reservoir%assigned_region == 954)  print *, 'a_trans(1:20,1:20)',a_trans(1:4,1:4)
-    if(reservoir%assigned_region == 954)  print *, 'b_trans(1:20,1:20)',b_trans(1:4,1:4)
+    print *, 'ocean a_trans(1:20,1:20)',a_trans(1:4,1:4)
+    print *, 'ocean b_trans(1:20,1:20)',b_trans(1:4,1:4)
 
     call mldivide(a_trans,b_trans)
     reservoir%wout = transpose(b_trans)
 
-    if(reservoir%assigned_region == 954)  print *, 'worker',reservoir%assigned_region,'wout(1,1:20)',reservoir%wout(1,1:20)
+    print *, 'ocean worker',reservoir%assigned_region,'wout(1,1:20)',reservoir%wout(1,1:20)
 
     deallocate(a_trans)
     deallocate(b_trans)
 
     write(level_char,'(i0.2)') grid%level_index
+    write(worker_char,'(i0.4)') reservoir%assigned_region 
+
+    if(.not.(reservoir%use_mean)) call write_netcdf_2d_non_met_data(reservoir%approx_grad_reg/reservoir%noise_realizations,'approx_grad_reg','ocean_region_'//worker_char//'_level_'//level_char//'approx_grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless',trim(x_dim),trim(y_dim))
+    if((reservoir%use_mean).and.(reservoir%gradregmag > 0.0_dp)) call write_netcdf_2d_non_met_data(reservoir%grad_reg_batch_mult*(reservoir%gradregmag**2.0_dp)*reservoir%grad_reg,'grad_reg','ocean_region_'//worker_char//'_level_'//level_char//'lmnt_grad_reg_'//trim(model_parameters%trial_name)//'.nc','unitless',trim(x_dim),trim(y_dim))
     !if(reservoir%assigned_region == 954) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_954_ocean_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
     !if(reservoir%assigned_region == 217) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_217_ocean_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
     !if(reservoir%assigned_region == 218) call write_netcdf_2d_non_met_data(reservoir%wout,'wout','region_218_ocean_'//level_char//'wout_'//trim(model_parameters%trial_name)//'.nc','unitless','wout_x','wout_y')
@@ -2128,22 +2178,24 @@ subroutine initialize_chunk_training(reservoir,model_parameters)
    integer :: num_of_batches !the number of chunks we want
    integer :: approx_batch_size !approximate size of the batch
 
-   num_of_batches = 1!10*6!2!10!*5!0!10*6 !20*6
-   approx_batch_size = (model_parameters%traininglength - model_parameters%discardlength)/(num_of_batches*model_parameters%timestep)
+   num_of_batches = 1!1!2!10!*5!0!10*6 !20*6
+   approx_batch_size = (model_parameters%traininglength - model_parameters%discardlength)/(num_of_batches*model_parameters%timestep_slab)
 
    !routine to get the closest reservoir%batch_size to num_of_batches that
    !divides into reservoir%traininglength
-   call find_closest_divisor(approx_batch_size,(model_parameters%traininglength - model_parameters%discardlength)/model_parameters%timestep,reservoir%batch_size)
-   print *, 'num_of_batches,approx_batch_size,reservoir%traininglength,reservoir%batch_size',num_of_batches,approx_batch_size,model_parameters%traininglength-model_parameters%discardlength,reservoir%batch_size
+   call find_closest_divisor(approx_batch_size,(model_parameters%traininglength - model_parameters%discardlength)/model_parameters%timestep_slab,reservoir%batch_size)
+   print *, 'ocean num_of_batches,approx_batch_size,reservoir%traininglength,reservoir%batch_size',num_of_batches,approx_batch_size,model_parameters%traininglength-model_parameters%discardlength,reservoir%batch_size
    !reservoir%batch_size = approx_batch_size
    if((reservoir%grad_reg_num_of_batches.ne.0).and.(reservoir%grad_reg_num_of_batches<=num_of_batches)) then
-     reservoir%grad_reg_batch_mult=real(num_of_batches,8)/real(reservoir%grad_reg_num_of_batches,8)
+     reservoir%grad_reg_batch_mult=real(num_of_batches*reservoir%batch_size,8)/real((reservoir%grad_reg_num_of_batches-1)*reservoir%batch_size + reservoir%batch_size + 1 - reservoir%noise_steps,8)
    elseif (reservoir%grad_reg_num_of_batches>num_of_batches) then
      reservoir%grad_reg_num_of_batches = num_of_batches
-     reservoir%grad_reg_batch_mult = 1.0_dp
+     reservoir%grad_reg_batch_mult=real(num_of_batches*reservoir%batch_size,8)/real((reservoir%grad_reg_num_of_batches-1)*reservoir%batch_size + reservoir%batch_size + 1 - reservoir%noise_steps,8)
    elseif (reservoir%grad_reg_num_of_batches.eq.0) then
      reservoir%grad_reg_batch_mult=real(num_of_batches,8)*real(reservoir%batch_size,8)
    endif
+
+   print *, 'ocean grad_reg_batch_mult', reservoir%grad_reg_batch_mult
 
    !Should be reservoir%n+ reservoir%chunk_size
    allocate(reservoir%states_x_trainingdata_aug(reservoir%chunk_size_prediction,reservoir%n+reservoir%chunk_size_speedy))!prediction))
@@ -2189,25 +2241,26 @@ subroutine chunking_matmul_ml(reservoir,model_parameters,grid,batch_number,train
    real(kind=dp), allocatable   :: temp(:,:),temp2(:,:),targetdata(:,:),states_var(:,:)
    real(kind=dp), parameter     :: alpha=1.0, beta=0.0
 
-   integer                      :: n, m, l, i
+   integer                      :: n, m, l, i, j
 
    n = size(reservoir%augmented_states,1)
    m = size(reservoir%augmented_states,2)
 
-   print *, 'grid%predict_end',grid%predict_end,model_parameters%discardlength/model_parameters%timestep+(batch_number-1)*m+1,batch_number*m+model_parameters%discardlength/model_parameters%timestep
+   print *, 'ocean grid%predict_end',grid%predict_end,model_parameters%discardlength/model_parameters%timestep_slab+(batch_number-1)*m+1,batch_number*m+model_parameters%discardlength/model_parameters%timestep_slab
 
    call tile_full_input_to_target_data_ocean_model(reservoir,grid,trainingdata(:,model_parameters%discardlength/model_parameters%timestep_slab+(batch_number-1)*m+1:batch_number*m+model_parameters%discardlength/model_parameters%timestep_slab),targetdata)
 
-   !if(reservoir%assigned_region == 954)  print *, 'target data',targetdata(:,1)
-   if(reservoir%assigned_region == 954)  print *, 'shape(trainingdata)',shape(trainingdata)
-   if(reservoir%assigned_region == 954)  print *, 'shape(targetdata)',shape(targetdata)
+
+   !print *, 'ocean target data',targetdata(1:4,1)
+   print *, 'ocean shape(trainingdata)',shape(trainingdata)
+   print *, 'ocean shape(targetdata)',shape(targetdata)
 
    allocate(temp(reservoir%chunk_size_prediction,n))
    allocate(temp2(n,n))
    if(reservoir%use_mean) then
       if(reservoir%assigned_region == 954)  print *, 'computing mean reservoir for batch ', batch_number
       do i = 1,reservoir%noise_realizations
-
+         print *, 'ocean noise realization, states', i, reservoir%states(1:3,1:3,i)
          reservoir%augmented_states(reservoir%chunk_size_speedy+1:reservoir%n+reservoir%chunk_size_speedy,:) = reservoir%states(:,:,i)
          temp = matmul(targetdata,transpose(reservoir%augmented_states))
          reservoir%states_x_trainingdata_aug=reservoir%states_x_trainingdata_aug + temp/reservoir%noise_realizations
@@ -2221,6 +2274,12 @@ subroutine chunking_matmul_ml(reservoir,model_parameters,grid,batch_number,train
    else
       if(reservoir%assigned_region == 954)  print *, 'computing variance from noiseless for batch ', batch_number
       reservoir%augmented_states(reservoir%chunk_size_speedy+1:reservoir%n+reservoir%chunk_size_speedy,:)=reservoir%noiseless_states
+      print *, 'ocean noiseless states 1:', reservoir%noiseless_states(1:5,1)
+      print *, 'ocean noiseless states 2:', reservoir%noiseless_states(1:5,2)
+      print *, 'ocean noiseless states 3:', reservoir%noiseless_states(1:5,3)
+      
+      print *, 'ocean target data 1:', targetdata(1:4,1)
+      print *, 'ocean target data 2:', targetdata(1:4,2)
       temp = matmul(targetdata,transpose(reservoir%augmented_states))
       reservoir%states_x_trainingdata_aug=reservoir%states_x_trainingdata_aug+temp
 
@@ -2230,16 +2289,30 @@ subroutine chunking_matmul_ml(reservoir,model_parameters,grid,batch_number,train
       temp2 = 0.0_dp
 
       deallocate(temp)
-      allocate(states_var(n,m))
-      do i=1,reservoir%noise_realizations
+      !allocate(states_var(n,m))
+      !do i=1,reservoir%noise_realizations
+      !   states_var = 0.0_dp
+      !   states_var(reservoir%chunk_size_speedy+1:reservoir%n+reservoir%chunk_size_speedy,:)=reservoir%states(:,:,i)-reservoir%noiseless_states
+      !   call DGEMM('N','N',n,n,m,alpha,states_var,n,transpose(states_var),m,beta,temp2,n)
+      !   reservoir%approx_grad_reg = reservoir%approx_grad_reg + temp2
+      !   temp2 = 0.0_dp
+      !enddo
+      allocate(states_var(n,reservoir%noise_realizations))
+      do i=1,m
          states_var = 0.0_dp
-         states_var(reservoir%chunk_size_speedy+1:reservoir%n+reservoir%chunk_size_speedy,:)=reservoir%states(:,:,i)-reservoir%noiseless_states
-         call DGEMM('N','N',n,n,m,alpha,states_var,n,transpose(states_var),m,beta,temp2,n)
+         do j=1,reservoir%noise_realizations
+            states_var(reservoir%chunk_size_speedy+1:reservoir%n+reservoir%chunk_size_speedy,j)=reservoir%states(:,i,j)-reservoir%noiseless_states(:,i)
+         enddo
+         call DGEMM('N','N',n,n,reservoir%noise_realizations,alpha,states_var,n,transpose(states_var),reservoir%noise_realizations,beta,temp2,n)
+         if(i<7) print *, 'Approx grad reg at iter ',i
+         if(i<7) print *, temp2(reservoir%chunk_size_speedy+1:reservoir%chunk_size_speedy+3,reservoir%chunk_size_speedy+1:reservoir%chunk_size_speedy+3)
          reservoir%approx_grad_reg = reservoir%approx_grad_reg + temp2
          temp2 = 0.0_dp
       enddo
       deallocate(temp2, states_var)
    endif
+   print *,'ocean info. mat', reservoir%states_x_states_aug(1:3,1:3)
+   print *,'ocean target mat', reservoir%states_x_trainingdata_aug(1:3,1:3)
 
    deallocate(targetdata)
 
@@ -2270,8 +2343,8 @@ subroutine chunking_matmul_hybrid(reservoir,model_parameters,grid,batch_number,t
    m = size(reservoir%augmented_states,2)
 
    !reservoir%augmented_states(1:reservoir%chunk_size_prediction,:) =
-   !imperfect_model(:,model_parameters%discardlength/model_parameters%timestep+(batch_number-1)*m+1:batch_number*m+model_parameters%discardlength/model_parameters%timestep)
-   reservoir%augmented_states(1:reservoir%chunk_size_speedy,:) = imperfect_model(:,model_parameters%discardlength/model_parameters%timestep+(batch_number-1)*m+1:batch_number*m+model_parameters%discardlength/model_parameters%timestep)
+   !imperfect_model(:,model_parameters%discardlength/model_parameters%timestep_slab+(batch_number-1)*m+1:batch_number*m+model_parameters%discardlength/model_parameters%timestep_slab)
+   reservoir%augmented_states(1:reservoir%chunk_size_speedy,:) = imperfect_model(:,model_parameters%discardlength/model_parameters%timestep_slab+(batch_number-1)*m+1:batch_number*m+model_parameters%discardlength/model_parameters%timestep_slab)
    !if(any(IEEE_IS_NAN(imperfect_model))) print *, 'imperfect_model has
    !nan',reservoir%assigned_region,batch_number
 
@@ -2280,12 +2353,12 @@ subroutine chunking_matmul_hybrid(reservoir,model_parameters,grid,batch_number,t
    !if(any(IEEE_IS_NAN(reservoir%states))) print *, 'reservoir%states has
    !nan',reservoir%assigned_region,batch_number
 
-   print *, 'grid%predict_end',grid%predict_end,model_parameters%discardlength/model_parameters%timestep+(batch_number-1)*m+1,batch_number*m+model_parameters%discardlength/model_parameters%timestep
+   print *, 'grid%predict_end',grid%predict_end,model_parameters%discardlength/model_parameters%timestep_slab+(batch_number-1)*m+1,batch_number*m+model_parameters%discardlength/model_parameters%timestep_slab
 
-   call tile_full_input_to_target_data(reservoir,grid,trainingdata(1:grid%predict_end,model_parameters%discardlength/model_parameters%timestep+(batch_number-1)*m+1:batch_number*m+model_parameters%discardlength/model_parameters%timestep),targetdata)
+   call tile_full_input_to_target_data(reservoir,grid,trainingdata(1:grid%predict_end,model_parameters%discardlength/model_parameters%timestep_slab+(batch_number-1)*m+1:batch_number*m+model_parameters%discardlength/model_parameters%timestep_slab),targetdata)
    if(any(IEEE_IS_NAN(targetdata))) print *, 'targetdata has nan',reservoir%assigned_region,batch_number
    !if(reservoir%assigned_region == 954)  print *,
-   !'model_parameters%discardlength/model_parameters%timestep+(batch_number-1)*m+1:batch_number*m+model_parameters%discardlength/model_parameters%timestep',model_parameters%discardlength/model_parameters%timestep+(batch_number-1)*m+1,batch_number*m+model_parameters%discardlength/model_parameters%timestep
+   !'model_parameters%discardlength/model_parameters%timestep_slab+(batch_number-1)*m+1:batch_number*m+model_parameters%discardlength/model_parameters%timestep_slab',model_parameters%discardlength/model_parameters%timestep_slab+(batch_number-1)*m+1,batch_number*m+model_parameters%discardlength/model_parameters%timestep_slab
    !if(reservoir%assigned_region == 954)  print *,
    !'model_parameters%discardlength',model_parameters%discardlength,'batch_number',batch_number,'m',m
    if(reservoir%assigned_region == 954)  print *, 'shape(trainingdata)',shape(trainingdata)

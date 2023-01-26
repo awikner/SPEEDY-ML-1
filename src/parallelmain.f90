@@ -17,7 +17,7 @@ program main
   integer :: standardizing_vars, i, j, k , t, prediction_num
 
   logical :: runspeedy = .False.
-  logical :: trained_model = .True.
+  logical :: trained_model = .False.
   logical :: slab_model
  
   real(kind=dp), allocatable :: test_state(:), test_feedback(:)
@@ -67,9 +67,11 @@ program main
   !---This is for debugging----!
   !You can run the code with a small number of processors and look at a few
   !regions of the globe 
-  !if(res%model_parameters%irank == 4) res%model_parameters%region_indices(1) = 954
+  !if(res%model_parameters%irank == 4) res%model_parameters%region_indices(1) = 95
+  !if(res%model_parameters%irank == 4) res%model_parameters%region_indices(2) = 95
   !if(res%model_parameters%irank == 2) res%model_parameters%region_indices(1) = 552
   !if(res%model_parameters%irank == 3)  res%model_parameters%region_indices(1) = 36
+  if(res%model_parameters%irank == 1) res%model_parameters%region_indices(1) = 2
 
   if(.not.(trained_model)) then
   !-----------Main Training Loop-------------!
@@ -109,6 +111,7 @@ program main
         call train_reservoir(res%reservoir(i,j),res%grid(i,j),res%model_parameters)
      enddo 
     
+     call init_random_marker(33)
      !Lets do all of the training for these special reservoirs for each sub
      !region
      if(res%model_parameters%slab_ocean_model_bool) then
