@@ -17,7 +17,7 @@ program main
   integer :: standardizing_vars, i, j, k , t, prediction_num
 
   logical :: runspeedy = .False.
-  logical :: trained_model = .False.
+  logical :: trained_model = .True.
   logical :: slab_model
  
   real(kind=dp), allocatable :: test_state(:), test_feedback(:)
@@ -71,7 +71,7 @@ program main
   !if(res%model_parameters%irank == 4) res%model_parameters%region_indices(2) = 95
   !if(res%model_parameters%irank == 2) res%model_parameters%region_indices(1) = 552
   !if(res%model_parameters%irank == 3)  res%model_parameters%region_indices(1) = 36
-  if(res%model_parameters%irank == 1) res%model_parameters%region_indices(1) = 2
+  !if(res%model_parameters%irank == 0) res%model_parameters%region_indices(1) = 2
 
   if(.not.(trained_model)) then
   !-----------Main Training Loop-------------!

@@ -338,10 +338,10 @@ def total_precip_bias_plot():
     startdate_climo = datetime(1981,1,1,0)
     enddate_climo = datetime(2018,12,31,0)
 
-    startdate_hybrid = datetime(2007,1,1,0)
-    enddate_hybrid  = datetime(2047,12,31,0)
+    startdate_hybrid = datetime(2007,3,19,0)
+    enddate_hybrid  = datetime(2017,3,18,0)
     #ds_hybrid = xr.open_dataset('/scratch/user/awikner/Predictions/Hybrid/hybrid_prediction_era6000_20_20_20_sigma0.5_beta_res0.001_beta_model_1.0_prior_0.0_overlap1_vertlevel_1_precipclimo_2kbias_10_year_then_platue_speedy_bc_atmo_no_ice_2k_sst_mean_20std_increase_trial_12_29_2006_00.nc')
-    ds_hybrid = xr.open_dataset('/scratch/user/awikner/Predictions/Hybrid/hybrid_prediction_era6000_20_20_20_beta_res0.0001_beta_model_1.0_prior_0.0_overlap1_vertlevel_1_precip_epsilon0.001_ocean_model7d_0.0001beta_sigma0.6_noise1_precipwabs_dpmpi_res_test_final_before_committrial_12_29_2006_00.nc') #hybrid_prediction_era6000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_1_vertlap_0_ocean_model_false_log_preciptrial_12_31_1999_00.nc')#
+    ds_hybrid = xr.open_dataset('/scratch/user/awikner/Predictions/Hybrid/hybrid_prediction_era6000_20_20_20_beta_res0.0001_beta_model_1.0_prior_0.0_overlap1_vertlevel_1_precip_epsilon0.001_ocean_model7d_0.0001beta_sigma0.6_alextest_preciplognoise_dptest203_19_2007_00.nc') #hybrid_prediction_era6000_20_20_20_beta_res0.01_beta_model_1.0_prior_0.0_overlap1_vertlevels_1_vertlap_0_ocean_model_false_log_preciptrial_12_31_1999_00.nc')#
 
     timestep = 6
 
@@ -354,7 +354,7 @@ def total_precip_bias_plot():
     ds_observed = get_era5_precip_timeseries(startdate_climo,enddate_climo,1)
     ds_observed_annual_climo = ds_observed.groupby('Timestep.year').sum('Timestep')['tp']
 
-    ds_hybrid =  make_ds_time_dim(ds_hybrid,timestep,startdate)
+    ds_hybrid =  make_ds_time_dim(ds_hybrid,timestep,startdate_hybrid)
     ds_hybrid = ds_hybrid.sel(Timestep=slice(startdate_hybrid.strftime("%Y-%m-%d"),enddate_hybrid.strftime("%Y-%m-%d"))) #NOTE change back to start_climot end climato
     #ds_hybrid = ds_hybrid.sel(Timestep=slice(startdate_climo.strftime("%Y-%m-%d"),enddate_climo.strftime("%Y-%m-%d")))
 
@@ -663,7 +663,7 @@ def total_precip_bias_plot():
     #plt.close("all")
     #plt.subplot_tool()
     plt.subplots_adjust(top=1.0,bottom=0.064,left=0.053,right=0.953,hspace=0.896,wspace=0.039)
-    plt.savefig(f'{plotdir}annual_precip_totals_and_bias_sst_7day_precipwabs.pdf')
+    plt.savefig(f'{plotdir}annual_precip_totals_and_bias_sst_7day_preciplognoise_alex.pdf')
     plt.show()
 
 total_precip_bias_plot()

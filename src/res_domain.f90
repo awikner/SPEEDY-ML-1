@@ -1584,13 +1584,13 @@ module resdomain
 
         if(grid%region_char == 'tropic') then
           !res%specific_humidity_log_bool = .True.  
-          reservoir%noisemag = 0.01!0
+          reservoir%noisemag = 0.2!0
         elseif(grid%region_char == 'extratropic') then
           !res%specific_humidity_log_bool = .True.
-          reservoir%noisemag = 0.01
+          reservoir%noisemag = 0.2
         elseif(grid%region_char == 'polar') then
           !res%specific_humidity_log_bool = .False.
-          reservoir%noisemag = 0.01
+          reservoir%noisemag = 0.2
         else
           print *, 'something is wrong worker',reservoir%assigned_region,'doesnt have a region'
         endif 
